@@ -1,9 +1,9 @@
 # gifs/{id}.gif → sprites/anim-*.webp(움직이는 프레임 묶음), sprites/thumbs.webp(정지 썸네일), js/sprites.js(좌표)
-import json,os,sys
+import json,os,sys,hashlib
 from PIL import Image,ImageSequence
 SRC,OUT=sys.argv[1],sys.argv[2]
 ids=json.load(open(sys.argv[3]))
-NF,MAXD,AW,TS,TC=10,88,2048,96,16
+NF,MAXD,AW,TS,TC=10,88,1024,96,16  # 묶음 그림은 1024px까지: 일부 휴대폰 브라우저는 큰 이미지를 캔버스에 못 그린다
 sheets={};meta={}
 for i in ids:
     p=f'{SRC}/{i}.gif'
@@ -44,8 +44,13 @@ for k,i in enumerate(tid):
 th.save(f'{OUT}/sprites/thumbs.webp','WEBP',quality=82,method=6);tot+=os.path.getsize(f'{OUT}/sprites/thumbs.webp')
 ani={i:[m['pos'][0],m['pos'][1],m['pos'][2],m['n'],m['w'],m['h'],m['s'],m['d']] for i,m in meta.items()}
 js='// 자동 생성: tools/build_sprites.py\n'
-js+=f'const ATLAS={json.dumps([f"sprites/anim-{a}.webp" for a in range(len(atlases))])};\n'
-js+=f'const THUMBS={{src:"sprites/thumbs.webp",cols:{TC},rows:{rows}}};\n'
+# 파일 이름에 내용 해시를 넣어, 새로 배포하면 브라우저가 옛 그림을 쓰지 않게 한다
+import glob,shutil
+for f in glob.glob(f'{OUT}/sprites/*.*.webp'):os.remove(f)
+def hashed(name):
+    f=f'{OUT}/sprites/{name}.webp';h=hashlib.md5(open(f,'rb').read()).hexdigest()[:8];shutil.move(f,f'{OUT}/sprites/{name}.{h}.webp');return f'sprites/{name}.{h}.webp'
+js+=f'const ATLAS={json.dumps([hashed(f"anim-{a}") for a in range(len(atlases))])};\n'
+js+=f'const THUMBS={{src:"{hashed("thumbs")}",cols:{TC},rows:{rows}}};\n'
 js+='const ANI={};(function(r){for(const k in r){const v=r[k];ANI[k]={a:v[0],x:v[1],y:v[2],n:v[3],w:v[4],h:v[5],s:v[6],d:v[7]};}})('+json.dumps(ani,separators=(',',':'))+');\n'
 js+='const THUMB_IX='+json.dumps(tix,separators=(',',':'))+';\n'
 open(f'{OUT}/js/sprites.js','w').write(js)

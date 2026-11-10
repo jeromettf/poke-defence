@@ -13,7 +13,11 @@ const sizeFor=(id,base)=>{const A=ANI[id];if(!A)return base;return base*(0.6+0.5
 const aniH=(id,size)=>{const A=ANI[id];return A?size*A.h/Math.max(A.h,A.w*0.62):size;};
 // 발밑(x,y) 기준으로 그림. tint={c,a}
 function drawAni(id,x,y,size,flip,alpha=1,tint=null,ph=0,sx=1,sy=1){
-  const A=ANI[id],im=A&&AIMG[A.a];if(!A||!im||!im.complete||!im.naturalWidth)return false;
+  const A=ANI[id],im=A&&AIMG[A.a];
+  if(!A||!im||!im.complete||!im.naturalWidth){
+    // 움직이는 그림이 없으면 정지 썸네일로라도 그린다
+    const k=THUMB_IX[id];if(k==null||!THIMG.naturalWidth)return false;const cs=THIMG.naturalWidth/THUMBS.cols;
+    ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.scale(flip?-sx:sx,sy*UPR);ctx.drawImage(THIMG,(k%THUMBS.cols)*cs,((k/THUMBS.cols)|0)*cs,cs,cs,-size/2,-size,size,size);ctx.restore();return true;}
   const n=A.n,fi=Math.floor(((clock+ph)/Math.max(0.6,A.d))*n)%n;
   const k=size/Math.max(A.h,A.w*0.62),dw=A.w*k,dh=A.h*k;
   ctx.save();ctx.globalAlpha=alpha;ctx.translate(x,y);ctx.scale(flip?-sx:sx,sy*UPR);

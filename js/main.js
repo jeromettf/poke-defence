@@ -63,5 +63,5 @@ function frame(ts){
   requestAnimationFrame(frame);
 }
 readCols();layout();renderPanel();requestAnimationFrame(frame);
-loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}).then(()=>{const l=$('loading');if(l)l.remove();showTitle();});
+loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}).then(r=>{const l=$('loading');if(l)l.remove();showTitle();const bad=r.filter(x=>!x).length;if(bad)setTimeout(()=>toast(`그림 파일 ${bad}개를 불러오지 못했어요. 새로고침해 보세요.`,4),600);});
 if(window.ResizeObserver){const ro=new ResizeObserver(()=>layout());ro.observe(stage);ro.observe($('dockbar'));ro.observe($('hud'));}

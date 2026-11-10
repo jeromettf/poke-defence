@@ -1,12 +1,16 @@
 'use strict';
 // ───────── 이미지 ─────────
 // 움직이는 스프라이트는 큰 묶음(anim-*.webp) 몇 장에 모아 두고 ANI 좌표로 잘라 그린다
-const AIMG=ATLAS.map(()=>new Image());
+const AIMG=ATLAS.map(()=>new Image()),THIMG=new Image();
+// 묶음 그림을 불러오고 디코딩까지 끝낸다. 실패하면 한 번 더 받아 본다.
+function loadImg(im,src){return new Promise(res=>{let tried=0;const go=()=>{im.onload=()=>{(im.decode?im.decode():Promise.resolve()).catch(()=>{}).then(()=>res(true));};
+  im.onerror=()=>{if(tried++<1)setTimeout(()=>{im.src=src+(src.includes('?')?'&':'?')+'r='+Date.now();},300);else res(false);};im.src=src;};go();});}
 function loadSprites(onProg){
-  const jobs=ATLAS.map((src,k)=>[AIMG[k],src]).concat([[new Image(),THUMBS.src]]);let done=0;
-  return Promise.all(jobs.map(([im,src])=>new Promise(res=>{im.onload=im.onerror=()=>{done++;onProg(done/jobs.length);res();};im.src=src;})));
+  const jobs=ATLAS.map((src,k)=>[AIMG[k],src]).concat([[THIMG,THUMBS.src]]);let done=0;
+  return Promise.all(jobs.map(([im,src])=>loadImg(im,src).then(ok=>{done++;onProg(done/jobs.length);return ok;})));
 }
 document.documentElement.style.setProperty('--thsz',`${THUMBS.cols*100}% ${THUMBS.rows*100}%`);
+document.documentElement.style.setProperty("--thimg",`url("${new URL(THUMBS.src,document.baseURI).href}")`);
 const sprTag=id=>{const k=THUMB_IX[id];if(k==null)return '';const c=k%THUMBS.cols,r=(k/THUMBS.cols)|0;
   return `<i class="th" style="background-position:${(c/(THUMBS.cols-1)*100).toFixed(3)}% ${(r/(THUMBS.rows-1)*100).toFixed(3)}%"></i>`;};
 
