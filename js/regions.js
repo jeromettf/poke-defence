@@ -64,11 +64,13 @@ const JOHTO_THEMES=[
 // 판 모양: 칸 좌표(0..COLS, 0..ROWS) 위의 닫힌 길. o는 판 바깥 여백(칸 단위)으로 layout에서 정해진다.
 const RECT_PATH=(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[-o,R+o]];
 const REGIONS=[
- {id:'kanto',n:'관동',sub:'관동 체육관 8곳, 40웨이브',gyms:KANTO_GYMS,themes:KANTO_THEMES,enemy:KANTO_ENEMY,cols:5,rows:4,path:RECT_PATH,closed:[],hpMul:1,
+ {id:'kanto',n:'관동',sub:'관동 체육관 8곳, 40웨이브 · ㄱ자로 꺾인 길',gyms:KANTO_GYMS,themes:KANTO_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,
+  // 오른쪽 위를 크게 도는 고리에 가운데 세로 길: 어느 칸이든 길에서 두 칸 안쪽
+  path:(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[2.5,R+o],[2.5,2.5],[-o,2.5]],closed:[10,11,12,17,22,27,32,37],hpMul:1,
   rule:null,win:'여덟 체육관을 모두 돌파했어요. 그린배지까지 손에 넣었어요.',winTitle:'관동 정복',face:[6,25,150]},
- {id:'johto',n:'성도',sub:'성도 체육관 8곳, 40웨이브',gyms:JOHTO_GYMS,themes:JOHTO_THEMES,enemy:JOHTO_ENEMY,cols:5,rows:5,hpMul:1.12,
-  // ㄷ자로 파인 아래쪽 길: 파인 자리 안쪽 한 칸은 세 방향이 길이라 명당
-  path:(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,3.5],[1.5,3.5],[1.5,R+o],[-o,R+o]],closed:[16,17,18,21,23],
+ {id:'johto',n:'성도',sub:'성도 체육관 8곳, 40웨이브 · 아래가 ㄷ자로 깊게 파인 길',gyms:JOHTO_GYMS,themes:JOHTO_THEMES,enemy:JOHTO_ENEMY,cols:5,rows:8,hpMul:1.12,
+  // ㄷ자로 깊게 파인 아래쪽 길: 안쪽 세로 세 칸은 세 방향이 길이라 명당
+  path:(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,4.5],[1.5,4.5],[1.5,R+o],[-o,R+o]],closed:[21,22,23,26,28,31,33,36,38],
   rule:'daynight',ruleDesc:'5웨이브마다 낮과 밤이 바뀌어요. 밤에는 고스트·악 포켓몬 공격 +30%, 고스트·악 적이 자주 나와요.',
   win:'여덟 체육관을 모두 돌파했어요. 라이징배지까지 손에 넣었어요.',winTitle:'성도 정복',face:[157,160,154],lock:'관동을 정복하면 열려요.'},
  {id:'hoenn',n:'호연',sub:'날씨가 바뀌는 지방',soon:true,face:[254,257,260],lock:'준비 중이에요.'},

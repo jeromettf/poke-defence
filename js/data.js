@@ -162,7 +162,7 @@ const NATURES=[
  {n:'대담',d:'치명타 +15%',dmg:1,rate:1,range:1,crit:0.15},
  {n:'성실',d:'공격 +5%',dmg:1.05,rate:1,range:1,crit:0},
 ];
-let COLS=5,ROWS=4,N=COLS*ROWS;const MAXW=40;
+let COLS=5,ROWS=8,N=COLS*ROWS;const MAXW=40;
 
 const TIERM=[0,1,2.6,7];
 const REFUND=[0,10,30,90,250];

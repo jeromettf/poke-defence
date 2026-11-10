@@ -80,7 +80,7 @@ const skillCd=(u,sk)=>sk.cd*(u.tier>=3?0.75:1)/(1+mods.skill+(u.s.skB||0));
 function skillChance(u){return (u.tier>=4?0.08:u.tier>=3?0.06:SK_BASE)*(1+mods.skill+(u.s.skB||0))*(u.s.mech==='technician'?2:1)+(u.pity||0);}
 let callout=null;
 function shout(u,sk,big){const nm=def(u).n;
-  if(big){callout={t:1.0,T:1.0,s:`${josa(nm,'의','의')} ${sk.n}!`,col:TYPE_COLOR[def(u).t[0]]};}
+  if(big){if(!startCutin(u,sk))callout={t:1.0,T:1.0,s:`${josa(nm,'의','의')} ${sk.n}!`,col:TYPE_COLOR[def(u).t[0]]};}
   else{const i=board.indexOf(u),c=cellCenter(i);fx.push({k:'txt',x:c.x,y:c.y-G.cell*0.55,s:sk.n,col:'#ffffff',t:.6,T:.6});}
   u.cast=0.35;}
 function skHit(u,e,mult,sk){if(e.dead)return;const at=u.s.t[0];const base=u.s.dmg*Math.max(mult,0.3);

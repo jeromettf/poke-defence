@@ -13,10 +13,10 @@ function sfx(k){if(!soundOn)return;try{if(!AC)AC=new (window.AudioContext||windo
 }catch(e){}}
 
 // ───────── 입력 ─────────
-function cellAt(ev){const r=cv.getBoundingClientRect();const x=ev.clientX-r.left,y=ev.clientY-r.top;
+function cellAt(ev){const r=cv.getBoundingClientRect();const x=ev.clientX-r.left,y=toWY(ev.clientY-r.top);
   const c=Math.floor((x-G.bx)/G.cell),rr=Math.floor((y-G.by)/G.cell);if(c<0||rr<0||c>=COLS||rr>=ROWS)return -1;const i=rr*COLS+c;return OPEN[i]?i:-1;}
 const canEdit=()=>state.phase==='play';
-cv.addEventListener('pointerdown',ev=>{if(!canEdit())return;const i=cellAt(ev);const r=cv.getBoundingClientRect();
+cv.addEventListener('pointerdown',ev=>{hideTip();if(!canEdit())return;const i=cellAt(ev);const r=cv.getBoundingClientRect();
   down={i,x:ev.clientX,y:ev.clientY,moved:false};
   if(i>=0&&board[i]){drag={from:i,x:ev.clientX-r.left,y:ev.clientY-r.top};try{cv.setPointerCapture(ev.pointerId);}catch(e){}}});
 cv.addEventListener('pointermove',ev=>{if(!down||!drag)return;const r=cv.getBoundingClientRect();drag.x=ev.clientX-r.left;drag.y=ev.clientY-r.top;
@@ -48,7 +48,9 @@ let last=0;
 function frame(ts){
   const dt=Math.min(0.05,last?(ts-last)/1000:0);last=ts;clock+=dt;
   if(state.cut){state.cut.t-=dt;if(state.cut.t<=0){state.cut=null;toast(state.cutMsg,3.4);}}
-  else if(state.phase==='play'&&!state.paused){for(let k=0;k<state.speed;k++){if(state.phase!=='play')break;update(dt);}}
+  else if(hitStop>0)hitStop-=dt;
+  else if(state.phase==='play'&&!state.paused){const sd=cutin&&cutin.T-cutin.t<0.28?dt*0.3:dt;for(let k=0;k<state.speed;k++){if(state.phase!=='play')break;update(sd);}}
+  updScene(dt);
   shake*=Math.pow(0.02,dt);
   if(recalcSoon){recalcSoon=false;recalc();}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').dataset.off='';}
@@ -62,4 +64,4 @@ function frame(ts){
 }
 readCols();layout();renderPanel();requestAnimationFrame(frame);
 loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}).then(()=>{const l=$('loading');if(l)l.remove();showTitle();});
-if(window.ResizeObserver)new ResizeObserver(()=>layout()).observe(stage);
+if(window.ResizeObserver){const ro=new ResizeObserver(()=>layout());ro.observe(stage);ro.observe($('dockbar'));ro.observe($('hud'));}
