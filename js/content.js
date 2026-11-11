@@ -52,7 +52,7 @@ function bump(k,n=1){state.mst[k]=(state.mst[k]||0)+n;if(typeof progBump==='func
 
 // ── 파트너 ──
 const PERK={3:'공격 속도 +20%',5:'최종 진화',7:'주변 1칸 아군 공격 +15%',10:'고유 스킬 확률과 재사용 속도 2배'};
-const XPN=lv=>20+lv*15;
+const XPN=lv=>15+lv*10;
 function placePartner(){
   const li=state.deck.find(l=>LINES[l].mech!=='ditto');if(li==null)return;
   const empty=board.map((v,i)=>v||!OPEN[i]?-1:i).filter(i=>i>=0);if(!empty.length)return;
@@ -81,7 +81,7 @@ function unequip(i){const u=board[i];if(!u||!u.item||u.mega)return;state.bag.pus
 
 // ── 메가진화 ──
 const megaOnBoard=()=>board.some(v=>v&&v.mega);
-const canMega=u=>u&&u.item==='stone'&&!u.mega&&u.tier===3&&MEGA[def(u).n]&&!megaOnBoard();
+const canMega=u=>featOn('mega')&&u&&u.item==='stone'&&!u.mega&&u.tier===3&&MEGA[def(u).n]&&!megaOnBoard();
 function megaFood(i){const u=board[i];if(!u||!u.mega||u.mega>=5)return -1;const k=keyOf(u);
   return board.findIndex((v,j)=>j!==i&&v&&v.tier===3&&!v.partner&&!v.mega&&keyOf(v)===k);}
 function megaEvolve(i){const u=board[i];if(!canMega(u))return;const old=def(u).id;u.mega=1;u.evo={t:1.1,T:1.1,from:old};
@@ -93,7 +93,7 @@ function megaFeed(i){const j=megaFood(i);if(j<0)return;const u=board[i],v=board[
 
 // ── 특수 조합 ──
 const comboOk=v=>v&&v.tier===3&&!v.partner&&!v.mega;
-function comboFor(i){const u=board[i];if(!comboOk(u))return null;const n=def(u).n,isE=LINES[u.line].mech==='eevee';
+function comboFor(i){const u=board[i];if(!comboOk(u)||!featOn('combo'))return null;const n=def(u).n,isE=LINES[u.line].mech==='eevee';
   for(const c of COMBOS){
     if(c.need[0]==='eevee3'){if(!isE)continue;const used=new Set([u.form]),cells=[];
       board.forEach((v,j)=>{if(j!==i&&comboOk(v)&&LINES[v.line].mech==='eevee'&&!used.has(v.form)&&cells.length<2){used.add(v.form);cells.push(j);}});
@@ -102,7 +102,7 @@ function comboFor(i){const u=board[i];if(!comboOk(u))return null;const n=def(u).
     for(const m of c.need){if(m===n)continue;const j=board.findIndex((v,j2)=>j2!==i&&!cells.includes(j2)&&comboOk(v)&&def(v).n===m);if(j<0)break;cells.push(j);}
     if(cells.length===2)return {c,cells};}
   return null;}
-function comboHint(u){if(!comboOk(u))return null;const n=def(u).n,isE=LINES[u.line].mech==='eevee';return COMBOS.find(c=>c.need[0]==='eevee3'?isE:c.need.includes(n))||null;}
+function comboHint(u){if(!comboOk(u)||!featOn('combo'))return null;const n=def(u).n,isE=LINES[u.line].mech==='eevee';return COMBOS.find(c=>c.need[0]==='eevee3'?isE:c.need.includes(n))||null;}
 function doCombo(i){const r=comboFor(i);if(!r)return;const u=board[i],old=def(u).id,c0=cellCenter(i);
   for(const j of r.cells){const q=cellCenter(j);fx.push({k:'absorb',x1:q.x,y1:q.y,x2:c0.x,y2:c0.y,t:.7,T:.7});dropItem(board[j]);board[j]=null;}
   u.tier=4;u.form=r.c.to;u.evo={t:1.3,T:1.3,from:old};shake=8;sfx('legend');camP=camT=1.1;
@@ -149,7 +149,7 @@ function callWild(){
   if(PROG.seen&&PROG.seen.wild)toast(`야생 ${josa(name,'이','가')} 나타났다! 25초 안에 쓰러뜨리세요.`,2.2);
   introCard('wild','야생 강적','체육관 구간마다 한 번 부를 수 있어요. 25초 안에 쓰러뜨리면 지닌 물건과 코인을 받고, 놓치면 적 8마리가 몰려와요. 체력이 25% 아래면 몬스터볼로 잡을 수도 있어요.');
 }
-function wildDown(e){state.wild=null;const c=40+state.wave*4;state.coins+=c;const it=pick(ITEM_POOL);giveItem(it);bump('wilds');sfx('badge');toast(`야생 ${e.name} 격파! 코인 +${c}, ${ITEMS[it].n}`,2.4);}
+function wildDown(e){state.wild=null;const c=30+state.wave*3;state.coins+=c;const it=pick(ITEM_POOL);giveItem(it);bump('wilds');sfx('badge');toast(`야생 ${e.name} 격파! 코인 +${c}, ${ITEMS[it].n}`,2.4);}
 
 // ── 운 뽑기 ──
 const luckCost=k=>Math.round(cost()*(k===3?3.2:1.6)*(state.luckOnly?0.5:1));
@@ -194,18 +194,18 @@ function checkMissions(){
       const nx=state.mDone<6?pickMissions(1,state.missions)[0]:null;if(nx){const d2=misDef(nx);if(d2.stat)nx.b=state.mst[d2.stat]||0;state.missions[k]=nx;}else state.missions.splice(k,1),k--;}}
 }
 function giveMission(m){const d=misDef(m);let txt='';
-  if(m.rw==='coin'){const c=60+state.wave*4;state.coins+=c;txt=`코인 +${c}`;}
+  if(m.rw==='coin'){const c=50+state.wave*3;state.coins+=c;txt=`코인 +${c}`;}
   else if(m.rw==='item'){const it=pick(ITEM_POOL);giveItem(it);txt=ITEMS[it].n;}
   else if(m.rw==='ball'){state.balls=Math.min(9,(state.balls||0)+2);txt='몬스터볼 2개';}
   else if(m.rw==='master'){state.master=(state.master||0)+1;txt='마스터볼';}
-  else if(m.rw==='stone'){giveItem('stone');txt='메가스톤';}
+  else if(m.rw==='stone'){if(F('mega')){giveItem('stone');txt='메가스톤';}else{state.coins+=80;txt='코인 80';}}
   sfx('badge');toast(`미션 완료: ${d.n}. ${josa(txt,'을','를')} 받았어요.`,2.6);
   const el=$('mchip');if(el){el.classList.remove('done');void el.offsetWidth;el.classList.add('done');}
 }
 
 // ── 웨이브 일찍 부르기 ──
 const canEarly=()=>state.phase==='play'&&!gymAt(state.wave)&&state.spawnLeft===0&&state.waveT>2&&state.wave<MAXW&&!state.wild;
-const earlyBonus=()=>Math.ceil(state.waveT*(1+state.wave*0.08));
+const earlyBonus=()=>Math.ceil(state.waveT*(0.5+state.wave*0.04));
 function callEarly(){if(!canEarly())return;const b=earlyBonus();state.coins+=b;bump('early');sfx('buy');toast(`일찍 불러서 코인 +${b}`,1.2);endWave();}
 
 // ── 길 바꾸기 ──
@@ -222,7 +222,7 @@ let misT=0;
 function updRun(dt){
   for(const t of state.throws){t.t+=dt;if(t.t>=t.T){t.done=true;const e=t.e;if(e.dead&&!e.caught)continue;
     e.dead=true;const lim=catchLim(e),f=e.hp/e.max;
-    const ok=t.master||Math.random()<Math.min(0.95,(0.35+(1-f/lim)*0.6+mods.catchB)*(e.wild?0.75:1));
+    const ok=t.master||state.tutSure||Math.random()<Math.min(0.95,(0.35+(1-f/lim)*0.6+mods.catchB)*(e.wild?0.75:1));
     state.capt.push({e,x:e.x,y:e.y,t:1.1,T:1.1,ok,master:t.master});}}
   state.throws=state.throws.filter(t=>!t.done);
   for(const c of state.capt){c.t-=dt;if(c.t<=0){c.done=true;finishCatch(c);}}
@@ -232,7 +232,7 @@ function updRun(dt){
     for(let k=0;k<8;k++)spawnEnemy(false);shake=4;toast(`야생 ${josa(W.name,'이','가')} 도망쳤어요. 소란에 적 8마리가 몰려와요.`,2.4);}}
   else if(W&&W.dead&&!W.caught)state.wild=null;
   if(state.conveyor){state.conv-=dt;if(state.conv<=0){state.conv=5;freeSummon();}}
-  misT-=dt;if(misT<=0){misT=0.5;checkMissions();}
+  misT-=dt;if(misT<=0){misT=0.5;if(featOn('missions'))checkMissions();}
 }
 function freeSummon(){const empty=board.map((v,i)=>v||!OPEN[i]?-1:i).filter(i=>i>=0);if(!empty.length)return;
   const line=pick(state.deck),L=LINES[line];board[pick(empty)]={line,tier:1,nat:rnd(NATURES.length),form:0,cd:0.7,grow:0,born:0,ball:{t:0.42,T:0.42}};sfx('summon');recalc();}
@@ -276,8 +276,24 @@ const OAK=[
  '같은 포켓몬 두 마리를 끌어다 겹치면 진화해. 서로 다른 3단계 세 마리로는 전설 포켓몬을 부를 수 있지.',
  '적이 많이 약해지면 왼쪽 볼 버튼으로 잡아 보렴. 위쪽 미션 칸을 누르면 이번 판 목표와 보상이 나와.',
  '필드에 적이 60마리를 넘으면 진다. 5웨이브마다 관장이 나오니 미리 대비하렴. 음악은 메뉴에서 켤 수 있어. 자, 시작해 볼까!'];
-function oakIntro(){if(store.get('pkrtd-oak'))return;store.set('pkrtd-oak','1');state.paused=true;syncPause();let k=0;const el=$('oak');
+function oakIntro(){return;if(store.get('pkrtd-oak'))return;store.set('pkrtd-oak','1');state.paused=true;syncPause();let k=0;const el=$('oak');
   const show=()=>{el.hidden=false;el.innerHTML=`<div class="oak-box"><span class="oak-name">오박사</span><p>${OAK[k]}</p><button class="gbtn summon" id="oakNext">${k<OAK.length-1?'다음':'시작하기'}</button><button class="oak-skip" id="oakSkip">건너뛰기</button></div>`;
     $('oakNext').onclick=()=>{k++;if(k<OAK.length)show();else done();};$('oakSkip').onclick=done;};
   const done=()=>{el.hidden=true;state.paused=false;syncPause();};
   show();}
+
+// ── 지닌 물건 아이콘: 화면(DOM)에는 SVG로, 전장(캔버스)에는 같은 SVG를 이미지로 바꿔 그린다 ──
+const ITEM_SVG={
+ scarf:'<path d="M6 9c4-3 16-3 20 0l-2 4c-4-2-12-2-16 0z" fill="#4f8ff7" stroke="#1d3f8a" stroke-width="1.6"/><path d="M19 12l3 13-5-1-1-11z" fill="#3a74d6" stroke="#1d3f8a" stroke-width="1.6"/><path d="M17 23l5 1M17.5 20l4 1" stroke="#9fc4ff" stroke-width="1.2"/>',
+ orb:'<circle cx="16" cy="16" r="11" fill="#b8337a" stroke="#4a0f30" stroke-width="2"/><circle cx="16" cy="16" r="6" fill="#ff7ab5" opacity=".7"/><circle cx="12" cy="11" r="3" fill="#fff" opacity=".75"/>',
+ left:'<path d="M16 9c5-3 11 1 10 8-1 6-5 9-10 9s-9-3-10-9c-1-7 5-11 10-8z" fill="#e8423a" stroke="#7a1712" stroke-width="1.8"/><path d="M22 12c3 2 3 7 1 10" fill="#fff6dc" stroke="#7a1712" stroke-width="1.4"/><path d="M16 9c0-3 1-5 3-6" stroke="#5a3a1a" stroke-width="2" fill="none"/><path d="M17 5c3-1 5 0 6 2-3 1-5 0-6-2z" fill="#5bb04f"/>',
+ ribbon:'<path d="M16 15c-4-6-11-6-10-1 1 4 6 3 10 1zM16 15c4-6 11-6 10-1-1 4-6 3-10 1z" fill="#ff7ab5" stroke="#8a1d57" stroke-width="1.6"/><path d="M14 16l-4 11 4-2 2 3 1-12z" fill="#e85a9c" stroke="#8a1d57" stroke-width="1.4"/><circle cx="16" cy="15" r="2.6" fill="#ffd0e4" stroke="#8a1d57" stroke-width="1.4"/>',
+ scope:'<circle cx="16" cy="16" r="10" fill="#cfe8ff" stroke="#1d3f8a" stroke-width="2.4"/><path d="M16 6v6M16 20v6M6 16h6M20 16h6" stroke="#d7392f" stroke-width="2"/><circle cx="16" cy="16" r="2" fill="#d7392f"/>',
+ wide:'<circle cx="14" cy="14" r="8" fill="#e3f4ff" stroke="#2b3f6a" stroke-width="2.4"/><path d="M20 20l7 7" stroke="#2b3f6a" stroke-width="3.6" stroke-linecap="round"/><path d="M10 12a5 5 0 0 1 5-4" stroke="#fff" stroke-width="2" fill="none"/>',
+ amulet:'<path d="M10 4l6 7 6-7" stroke="#d7392f" stroke-width="2.4" fill="none"/><circle cx="16" cy="19" r="9" fill="#f5c542" stroke="#9a720f" stroke-width="2"/><circle cx="16" cy="19" r="4.5" fill="none" stroke="#9a720f" stroke-width="1.8"/>',
+ band:'<path d="M4 15c6-3 18-3 24 0v4c-6-3-18-3-24 0z" fill="#e8413a" stroke="#7a1712" stroke-width="1.6"/><path d="M25 17l4 6-4-1-1 4-2-8z" fill="#c22d24" stroke="#7a1712" stroke-width="1.4"/><circle cx="16" cy="16.5" r="2.4" fill="#fff"/>',
+ stone:'<circle cx="16" cy="16" r="11" fill="#ffd6f3" stroke="#8a1d6e" stroke-width="2"/><path d="M11 10c6 2 4 10 10 12M21 10c-6 2-4 10-10 12" stroke="#c0399a" stroke-width="2.2" fill="none"/><circle cx="12" cy="11" r="2.2" fill="#fff"/>',
+};
+const itemIco=(id,cls='ii')=>`<svg class="${cls}" viewBox="0 0 32 32" aria-hidden="true">${ITEM_SVG[id]||''}</svg>`;
+const ITEM_IMG={};
+for(const k in ITEM_SVG){const im=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">${ITEM_SVG[k]}</svg>`);ITEM_IMG[k]=im;}

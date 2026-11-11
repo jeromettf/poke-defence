@@ -5,10 +5,15 @@ const AIMG=ATLAS.map(()=>new Image()),THIMG=new Image();
 // 묶음 그림을 불러오고 디코딩까지 끝낸다. 실패하면 한 번 더 받아 본다.
 function loadImg(im,src){return new Promise(res=>{let tried=0;const go=()=>{im.onload=()=>{(im.decode?im.decode():Promise.resolve()).catch(()=>{}).then(()=>res(true));};
   im.onerror=()=>{if(tried++<1)setTimeout(()=>{im.src=src+(src.includes('?')?'&':'?')+'r='+Date.now();},300);else res(false);};im.src=src;};go();});}
-function loadSprites(onProg){
-  const jobs=ATLAS.map((src,k)=>[AIMG[k],src]).concat([[THIMG,THUMBS.src]]);let done=0;
-  return Promise.all(jobs.map(([im,src])=>loadImg(im,src).then(ok=>{done++;onProg(done/jobs.length);return ok;})));
-}
+// 시작할 때는 정지 썸네일 한 장만 기다린다. 움직이는 묶음은 뒤에서 받고, 오기 전까지는 썸네일로 그린다.
+// 묶음은 그룹(0 관동, 1 전설·메가, 2 성도, 3 호연·챔피언로드)으로 나뉘어 있고, 지금 판에 필요한 그룹부터 받는다.
+const ALOAD=ATLAS.map(()=>0);let aPrio=[0,1,2,3],aBusy=0,aFailT=false;
+function loadSprites(onProg){onProg(0.3);return loadImg(THIMG,THUMBS.src).then(ok=>{onProg(1);bgLoad();return [ok];});}
+function nextAtlas(){for(const g of aPrio){const k=ATLAS.findIndex((s,i)=>ALOAD[i]===0&&ATLAS_G[i]===g);if(k>=0)return k;}return -1;}
+function bgLoad(){while(aBusy<3){const k=nextAtlas();if(k<0)return;ALOAD[k]=1;aBusy++;
+  loadImg(AIMG[k],ATLAS[k]).then(ok=>{ALOAD[k]=ok?2:-1;aBusy--;if(!ok&&!aFailT){aFailT=true;toast('움직이는 그림 일부를 받지 못해 멈춘 그림으로 보여요. 새로고침하면 다시 받아요.',3);}bgLoad();});}}
+function wantGroup(g){aPrio=[g,...aPrio.filter(x=>x!==g)];bgLoad();}
+const REGION_G={kanto:0,johto:2,hoenn:3,champ:3};
 document.documentElement.style.setProperty('--thsz',`${THUMBS.cols*100}% ${THUMBS.rows*100}%`);
 document.documentElement.style.setProperty("--thimg",`url("${new URL(THUMBS.src,document.baseURI).href}")`);
 const sprTag=id=>{const k=THUMB_IX[id];if(k==null)return '';const c=k%THUMBS.cols,r=(k/THUMBS.cols)|0;
@@ -110,8 +115,8 @@ function calcStats(u,i){
   // 날씨
   let wm=1;const wk=weatherAt(state.wave);if(wk){const W=WEATHER[wk],k=1+mods.weather;if(d.t.some(t=>W.up.includes(t)))wm+=(wk==='sand'?0.35:0.4)*k;if(d.t.some(t=>W.down.includes(t)))wm-=0.25;}
   return {n:d.n,id:d.id,t:d.t,role:d.role,mech:d.mech,
-    dmg:d.dmg*tm*nat.dmg*(1+mods.dmgAll)*(1+syn)*(1+aD)*(1+0.3*lv)*(1+grow)*(1+lb)*(1+tb)*(1+t3)*(1+nb)*(noct&&night?2:1)*(it==='orb'?1.5:1)*(1+0.1*pair)*(pl?1+0.12*(pl-1):1)*wm*(P.mew?1.15:1),
-    rate:d.rate*(1+0.12*(tr-1))*nat.rate*(1+mods.rateAll)*(1+aR)*(1+0.06*lv)*(noct&&!night?1.2:1)*(it==='scarf'?1.4:1)*(pl>=3?1.2:1),
+    dmg:d.dmg*tm*nat.dmg*(1+mods.dmgAll)*(1+syn)*(1+aD)*(1+0.3*lv)*(1+grow)*(1+lb)*(1+tb)*(1+t3)*(1+nb)*(noct&&night?2:1)*(it==='orb'?1.35:1)*(1+0.1*pair)*(pl?1+0.12*(pl-1):1)*wm*(P.mew?1.15:1),
+    rate:d.rate*(1+0.12*(tr-1))*nat.rate*(1+mods.rateAll)*(1+aR)*(1+0.06*lv)*(noct&&!night?1.2:1)*(it==='scarf'?1.3:1)*(pl>=3?1.2:1),
     range:(d.range+(d.range?0.25*(tr-1)+aG:0)+(noct&&!night?1:0)+(d.range&&it==='wide'?0.8:0)+(d.range&&u.mega?0.3:0))*nat.range*(1+mods.rangeAll),
     crit:d.mech==='alwayscrit'?1:mods.crit+nat.crit+aC+(d.mech==='crit'?0.15+0.05*tr:0)+(it==='scope'?0.25:0)+(P.latios?0.1:0),
     critM:(d.mech==='crit'?3:2)+cD,
@@ -296,6 +301,7 @@ function genWaves(seed){const R=seed?mulberry(seed):Math.random,pk=a=>a[Math.flo
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const wmodAt=w=>state.wmods&&state.wmods[w]?WMOD[state.wmods[w]]:null;
 function newGame(deck,tr,R=REGION,opt={}){
+  wantGroup(1);wantGroup(0);wantGroup(REGION_G[R.id]||0);
   setRegion(R);layout();mods=freshMods();
   state={info:state.info,phase:'play',deck,up:deck.map(()=>0),coins:100,wave:0,waveT:0,waveLen:20,spawnLeft:0,spawnT:0,spawnGap:1,summons:0,speed:state.speed||1,paused:false,
     region:R.id,mode:opt.mode||'adv',rank:opt.rank||0,rules:opt.rules||[],seed:opt.seed||0,raidLeg:opt.raidLeg,daily:opt.daily||null,
@@ -318,6 +324,7 @@ function startWave(){
   if(state.wave>1&&state.pass&&state.pass.jirachi){state.coins+=25;}
   for(const u of board)if(u)u.sb=0;
   state.waveKills=0;if((state.wave-1)%5===0)state.wildReady=true;
+  if(state.mode==='adv'||state.mode==='rule')featCheckWave(state.wave);
   let gl=0;for(const u of board)if(u&&u.tier<4&&def(u).mech==='glutton')gl+=[3,7,15][Math.min(u.tier,3)-1];
   if(gl&&state.wave>1){state.coins+=gl;toast(`먹보 코인 +${gl}`,1);}
   const w=state.wave,g=gymAt(w);
@@ -351,8 +358,8 @@ function spawnEnemy(isBoss){
 function endWave(){
   const w=state.wave;state.coins+=8+w;
   const g=gymAt(w);
-  partnerXp(6);
-  if(g){g.ap(mods);state.badges++;state.balls=Math.min(6,(state.balls||0)+1);recalc();noteBadge();gymStars(g);}
+  partnerXp(8);
+  if(g){g.ap(mods);state.badges++;state.balls=Math.min(6,(state.balls||0)+1);recalc();noteBadge();gymStars(g);featCheckGym();}
   if(w>=MAXW)return finish(true,REGION.win);
   if(g||w===2)openReward(g);else startWave();
 }
@@ -360,8 +367,9 @@ const fieldCap=()=>(state.capBase||60)+mods.cap;
 
 function update(dt){
   const w=state.wave;
+  if(state.hold)state.waveT+=dt;
   state.waveT-=dt;if(state.windT>0)state.windT-=dt;if(state.hailT>0)state.hailT-=dt;
-  if(state.spawnLeft>0){state.spawnT-=dt;while(state.spawnT<=0&&state.spawnLeft>0){spawnEnemy(false);state.spawnLeft--;state.spawnT+=state.spawnGap;}}
+  if(state.spawnLeft>0&&!state.hold){state.spawnT-=dt;while(state.spawnT<=0&&state.spawnLeft>0){spawnEnemy(false);state.spawnLeft--;state.spawnT+=state.spawnGap;}}
   for(const e of enemies){
     if(e.dead)continue;e.age+=dt;
     if(e.yawnT>0){e.yawnT-=dt;if(e.yawnT<=0&&!e.boss){e.stunT=Math.max(e.stunT,e.yawnS||3);e.sleep=true;}}
@@ -534,13 +542,13 @@ function hit(u,e,base,at,mech){
   return m;
 }
 function dmgRaw(e,d,u){
-  if(e.dead||e.caught)return;if(u)u.dealt=(u.dealt||0)+Math.min(d,Math.max(0,e.hp));e.hp-=d;
+  if(e.dead||e.caught)return;if(e.tutKeep)d=Math.min(d,Math.max(0,e.hp-e.max*0.05));if(u)u.dealt=(u.dealt||0)+Math.min(d,Math.max(0,e.hp));e.hp-=d;
   if(e.hp<=0){e.dead=true;state.kills++;
     let c=1+Math.floor(state.wave/8)+mods.coinKill;
     if(u&&u.s.mech==='coin')c+=Math.min(u.tier,3);
     if(u&&u.item==='amulet')c+=2;
     state.waveKills=(state.waveKills||0)+1;
-    if(u&&u.partner)partnerXp(e.boss?20:1,u);
+    if(u&&u.partner)partnerXp(e.boss?25:2,u);
     if(e.wild)wildDown(e);
     if(u&&u.s.mech==='grow'&&(u.grow||0)<100){u.grow=(u.grow||0)+1;if(u.grow%10===0)recalcSoon=true;}
     state.coins+=c;flushPop(e);

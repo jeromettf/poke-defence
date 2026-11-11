@@ -21,10 +21,10 @@
       <div class="plate coin" id="coins">0</div>
     </div>
     <div class="hud-row sub">
-      <div class="tline" id="tline"><i id="tbar"></i></div><span class="tsec" id="tsec">0초</span>
-      <button class="hchip mis" id="mchip">미션</button>
-      <button class="hchip wild" id="wildBtn" hidden></button>
-      <button class="gymchip" id="gymline" hidden></button>
+      <button class="prog" id="prog" aria-label="웨이브 진행과 다음 관장"><span class="ptrack" id="tline"><i id="tbar"></i></span><span class="pgym" id="pgym" hidden></span><span class="tsec" id="tsec">0초</span></button>
+      <button class="hico mis" id="mchip" aria-label="미션" hidden></button>
+      <button class="hico wild" id="wildBtn" aria-label="야생 강적" hidden></button>
+      <div class="news" id="toast" data-off></div>
     </div>
   </header>
 
@@ -32,7 +32,6 @@
   <button class="early" id="early" hidden></button>
   <div class="intro" id="intro" hidden></div>
   <div class="bossbar" id="bossbar" hidden><span class="bn" id="bbn"></span><div class="hp"><i id="bbh"></i></div><span class="bt" id="bbt"></span></div>
-  <div class="toast" id="toast" data-off></div>
   <div class="radial" id="radial" hidden></div>
 
   <div class="dockbar" id="dockbar">
@@ -50,6 +49,7 @@
   <section class="panel sheetcard" id="panel" aria-live="polite" hidden></section>
   <div class="tip" id="tip" hidden></div>
   <div class="oak" id="oak" hidden></div>
+  <div class="spot" id="spot" hidden><div class="hole" id="spotHole"></div><div class="finger" id="spotFinger" hidden></div><div class="bub" id="spotBub"></div></div>
 </div>
 
 <div class="modal" id="modal" hidden><div class="sheet" id="sheet"></div></div>
@@ -63,6 +63,7 @@
 <script src="js/content.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/meta.js"></script>
+<script src="js/tutorial.js"></script>
 <script src="js/render.js"></script>
 <script src="js/scene.js"></script>
 <script src="js/main.js"></script>

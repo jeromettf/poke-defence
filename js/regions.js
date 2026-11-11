@@ -97,26 +97,26 @@ const CHAMP_THEMES=[JOHTO_THEMES[6],KANTO_THEMES[6],KANTO_THEMES[4],JOHTO_THEMES
 const RECT_PATH=(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[-o,R+o]];
 const V=(path,closed,n)=>({path,closed,n});
 const REGIONS=[
- {id:'kanto',n:'관동',sub:'관동 체육관 8곳, 40웨이브 · 관장마다 바뀌는 길',gyms:KANTO_GYMS,themes:KANTO_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,hpMul:1.07,
+ {id:'kanto',n:'관동',sub:'관동 체육관 8곳, 40웨이브 · 관장마다 바뀌는 길',gyms:KANTO_GYMS,themes:KANTO_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,hpMul:1.12,
   variants:[
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[2.5,R+o],[2.5,2.5],[-o,2.5]],[10,11,12,17,22,27,32,37],'ㄱ자 길'),
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,2.5],[2.5,2.5],[2.5,R+o],[-o,R+o]],[12,13,14,17,22,27,32,37],'거꾸로 ㄱ자 길'),
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,5.5],[1.5,5.5],[1.5,R+o],[-o,R+o]],[26,27,28,29,31,36],'아래로 꺾인 길')],
   rule:null,win:'여덟 체육관을 모두 돌파했어요. 그린배지까지 손에 넣었어요.',winTitle:'관동 정복',face:[6,25,150]},
- {id:'johto',n:'성도',sub:'성도 체육관 8곳, 40웨이브 · 낮과 밤',gyms:JOHTO_GYMS,themes:JOHTO_THEMES,enemy:JOHTO_ENEMY,cols:5,rows:8,hpMul:1.22,
+ {id:'johto',n:'성도',sub:'성도 체육관 8곳, 40웨이브 · 낮과 밤',gyms:JOHTO_GYMS,themes:JOHTO_THEMES,enemy:JOHTO_ENEMY,cols:5,rows:8,hpMul:1.26,
   variants:[
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,4.5],[1.5,4.5],[1.5,R+o],[-o,R+o]],[21,22,23,26,28,31,33,36,38],'아래가 파인 ㄷ자 길'),
    V((o,C,R)=>[[-o,-o],[1.5,-o],[1.5,3.5],[3.5,3.5],[3.5,-o],[C+o,-o],[C+o,R+o],[-o,R+o]],[1,6,11,16,17,18,3,8,13],'위가 파인 ㄷ자 길'),
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,2.5],[1.5,2.5],[1.5,5.5],[C+o,5.5],[C+o,R+o],[-o,R+o]],[11,12,13,14,16,21,26,27,28,29],'옆이 파인 ㄷ자 길')],
   rule:'daynight',ruleDesc:'5웨이브마다 낮과 밤이 바뀌어요. 밤에는 고스트·악 포켓몬 공격 +30%, 고스트·악 적이 자주 나와요.',
   win:'여덟 체육관을 모두 돌파했어요. 라이징배지까지 손에 넣었어요.',winTitle:'성도 정복',face:[157,160,154],lock:'관동을 정복하면 열려요.'},
- {id:'hoenn',n:'호연',sub:'호연 체육관 8곳, 40웨이브 · 날씨와 지그재그 길',gyms:HOENN_GYMS,themes:HOENN_THEMES,enemy:HOENN_ENEMY,cols:5,rows:8,hpMul:1.14,
+ {id:'hoenn',n:'호연',sub:'호연 체육관 8곳, 40웨이브 · 날씨와 지그재그 길',gyms:HOENN_GYMS,themes:HOENN_THEMES,enemy:HOENN_ENEMY,cols:5,rows:8,hpMul:1.24,
   variants:[
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,5.5],[1.5,5.5],[1.5,2.5],[-o,2.5]],[10,11,16,21,26,27,28,33,38],'지그재그 길'),
    V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,2.5],[3.5,2.5],[3.5,5.5],[1.5,5.5],[1.5,R+o],[-o,R+o]],[13,14,18,23,28,26,27,31,36],'거꾸로 지그재그 길')],
   rule:'weather',ruleDesc:'5웨이브마다 날씨가 바뀌어요. 쾌청은 불꽃, 비는 물, 모래바람은 바위·땅·강철, 싸라기눈은 얼음 포켓몬이 세져요.',
   win:'여덟 체육관을 모두 돌파했어요. 레인배지까지 손에 넣었어요.',winTitle:'호연 정복',face:[254,257,260],lock:'성도를 정복하면 열려요.'},
- {id:'champ',n:'챔피언로드',sub:'사천왕 넷과 챔피언, 25웨이브 · 8자로 엇갈리는 길',gyms:CHAMP_GYMS,themes:CHAMP_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,hpMul:1.45,maxw:25,
+ {id:'champ',n:'챔피언로드',sub:'사천왕 넷과 챔피언, 25웨이브 · 8자로 엇갈리는 길',gyms:CHAMP_GYMS,themes:CHAMP_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,hpMul:1.55,maxw:25,
   variants:[V((o,C,R)=>[[2.5,-o],[C+o,-o],[C+o,3.5],[-o,3.5],[-o,R+o],[2.5,R+o]],[2,7,12,15,16,17,18,19,22,27,32,37],'8자 길')],
   rule:null,ruleDesc:'5웨이브마다 사천왕이 나오고, 25웨이브에서 챔피언과 싸워요. 적이 처음부터 강해요.',
   win:'사천왕과 챔피언을 모두 이겼어요. 이제 당신이 챔피언이에요.',winTitle:'챔피언',face:[131,149,6],lock:'관동을 정복하면 열려요.'},

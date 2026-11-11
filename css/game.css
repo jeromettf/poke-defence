@@ -41,7 +41,7 @@ canvas{display:block;touch-action:none}
   background:linear-gradient(180deg,rgba(44,62,108,.94) 0%,rgba(24,34,66,.94) 100%);color:#fff;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.08),0 3px 0 rgba(6,10,24,.55),0 6px 14px rgba(6,10,24,.25)}
 .stroke{paint-order:stroke fill;-webkit-text-stroke:3px #0b1226}
-.hud{position:absolute;left:0;right:0;top:0;z-index:4;padding:max(8px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.hud{position:absolute;left:0;right:0;top:0;z-index:6;padding:max(8px,env(safe-area-inset-top,0px)) max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px;pointer-events:none}
 .hud>*{pointer-events:auto}
 .hud-row{display:flex;align-items:stretch;gap:6px}
 .hud-row.sub{align-items:center;gap:8px;padding:0 2px}
@@ -294,20 +294,55 @@ h4{margin:8px 0 0;font-size:12px;color:#b9c6e8;letter-spacing:.04em;font-weight:
 .loading p{margin:0;color:#b9c6e8;font-size:13px}
 @media (prefers-reduced-motion:reduce){.toast,.gauge i{transition:none}.coins.bump,.up.flash{animation:none}}
 
-.hud.bossing .hud-row.sub{visibility:hidden}
 
 /* ── 판 안 콘텐츠: 미션·야생·일찍·포획·운 ── */
-.hchip,.early{background:linear-gradient(180deg,rgba(44,62,108,.94) 0%,rgba(24,34,66,.94) 100%);color:#fff;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.08),0 3px 0 rgba(6,10,24,.55);pointer-events:auto}
-.hchip{border-radius:999px;height:30px;padding:0 10px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;white-space:nowrap;position:relative;overflow:hidden;flex:none}
-.hchip b{font-family:var(--f-display);font-weight:400;font-size:14px;color:#ffd84a}
-.hchip.mis i{position:absolute;left:0;bottom:0;height:3px;background:#7be08f;transition:width .3s}
-.hchip.mis.done{animation:pop .5s}
-.hchip.wild{padding:0 10px 0 4px;background:linear-gradient(180deg,#e2574a,#a8291f)}
-.hchip.wild .wic{width:22px;height:22px;border-radius:50%;background:#fff;color:#c0322a;display:grid;place-items:center;font-family:var(--f-display);font-size:15px}
-.hchip.wild.on{animation:pulse 1s infinite}
-.hchip .face{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.9)}
-.gymchip{pointer-events:auto}
+.early{background:linear-gradient(180deg,#43b86a,#23824a);color:#fff;pointer-events:auto;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 3px 0 rgba(6,10,24,.55)}
+/* HUD 둘째 줄: 진행 막대(다음 관장 얼굴), 미션, 야생, 그리고 같은 자리에 잠깐 뜨는 소식 */
+.hud-row.sub{position:relative;height:44px;padding:0;gap:6px}
+.prog,.hico{pointer-events:auto;height:44px;border-radius:14px;background:linear-gradient(180deg,rgba(44,62,108,.94) 0%,rgba(24,34,66,.94) 100%);color:#fff;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(255,255,255,.08),0 3px 0 rgba(6,10,24,.55)}
+.prog{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:0 6px 0 12px}
+.ptrack{position:relative;flex:1;height:8px;border-radius:4px;background:rgba(11,18,38,.6);overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.ptrack::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 calc(20% - 1px),rgba(255,255,255,.35) calc(20% - 1px) 20%)}
+.ptrack i{display:block;height:100%;width:0;background:#9fd0ff;border-radius:4px;transition:width .3s linear}
+.ptrack.gym i{background:#ffd84a}
+.pgym{position:relative;width:34px;height:34px;flex:none;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 0 0 2px #ffd84a}
+.pgym .th{width:34px;height:34px;border-radius:50%}
+.pgym b{position:absolute;right:-6px;bottom:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#d7392f;color:#fff;font-family:var(--f-display);font-weight:400;font-size:11px;line-height:18px;text-align:center}
+.prog .tsec{min-width:34px;text-align:right}
+.hico{width:44px;flex:none;position:relative;display:grid;place-items:center;overflow:hidden}
+.hico svg{width:24px;height:24px}
+.hico b{position:absolute;right:3px;top:2px;font-family:var(--f-display);font-weight:400;font-size:13px;color:#ffd84a;paint-order:stroke fill;-webkit-text-stroke:3px #0b1226}
+.hico.mis i{position:absolute;left:0;bottom:0;height:4px;background:#7be08f;transition:width .3s}
+.hico.mis.done{animation:pop .5s}
+.hico.wild{background:linear-gradient(180deg,#e2574a,#a8291f)}
+.hico.wild .wic{width:24px;height:24px;border-radius:50%;background:#fff;color:#c0322a;display:grid;place-items:center;font-family:var(--f-display);font-size:16px;margin-top:-6px}
+.hico.wild small{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:10px;font-weight:700}
+.hico.wild.on{animation:pulse 1s infinite}
+.hico .face{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.9)}.hico .face .th{width:36px;height:36px}
+.hico.wild b{right:2px;top:auto;bottom:1px;color:#fff}
+.news{position:absolute;left:0;right:0;top:0;min-height:44px;z-index:7;display:flex;align-items:center;padding:6px 14px;border-radius:14px;pointer-events:none;
+  background:#fffdf5;color:var(--ink);font-weight:700;font-size:13px;line-height:1.35;word-break:keep-all;box-shadow:0 0 0 3px #24345e,0 6px 16px rgba(6,10,24,.35);transition:opacity .2s,transform .2s}
+.news[data-off]{opacity:0;transform:translateY(-4px)}
+.hud.bossing .hud-row.sub>:not(.news){visibility:hidden}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18);box-shadow:0 0 0 3px #7be08f}100%{transform:scale(1)}}
+@keyframes pulse{50%{filter:brightness(1.25)}}
+/* 튜토리얼 스포트라이트 */
+.spot{position:fixed;inset:0;z-index:20;pointer-events:none}
+.spot .hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(6,10,24,.62),0 0 0 3px #ffd84a inset;transition:all .25s ease;animation:spotp 1.4s ease-in-out infinite}
+.spot .hole.none{box-shadow:0 0 0 9999px rgba(6,10,24,.62)}
+@keyframes spotp{50%{box-shadow:0 0 0 9999px rgba(6,10,24,.62),0 0 0 5px #fff6a8 inset}}
+.spot .bub{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));margin:0 auto;max-width:420px;background:#fff;color:var(--ink);border-radius:16px;padding:18px 14px 12px;
+  box-shadow:0 0 0 3px #24345e,0 10px 24px rgba(6,10,24,.4);pointer-events:auto;display:flex;flex-direction:column;gap:10px}
+.spot .bub .oak-name{top:-13px}
+.spot .bub p{margin:0;font-size:14.5px;line-height:1.55;font-weight:500;word-break:keep-all}
+.spot .bub .row{display:flex;justify-content:space-between;align-items:center}
+.spot .bub .row .gbtn{padding:9px 20px;font-size:16px}
+.spot .bub .skip{font-size:12px;font-weight:700;color:var(--ink-3)}
+.spot .finger{position:fixed;width:44px;height:44px;margin:-6px 0 0 -10px;font-size:36px;line-height:44px;animation:drag 1.6s ease-in-out infinite;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+@keyframes drag{0%{transform:translate(var(--ax),var(--ay)) scale(1);opacity:0}15%{opacity:1;transform:translate(var(--ax),var(--ay)) scale(.9)}70%{transform:translate(var(--bx),var(--by)) scale(.9);opacity:1}100%{transform:translate(var(--bx),var(--by)) scale(1);opacity:0}}
+.row4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.row4 .gbtn{font-size:15px;padding:12px 4px}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18);box-shadow:0 0 0 3px #7be08f}100%{transform:scale(1)}}
 @keyframes pulse{50%{filter:brightness(1.25)}}
 .early{position:absolute;z-index:3;border-radius:12px;padding:3px 9px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;transform:translate(-8px,0);background:linear-gradient(180deg,#43b86a,#23824a)}
@@ -385,3 +420,20 @@ h4{margin:8px 0 0;font-size:12px;color:#b9c6e8;letter-spacing:.04em;font-weight:
 .ach .ap{width:84px;flex:none;display:flex;flex-direction:column;gap:3px;align-items:flex-end}
 .ach .barw{display:block;width:100%;height:6px;background:var(--surface-3);border-radius:3px;overflow:hidden}
 .ach small{font-size:11px;color:var(--ink-3)}
+
+/* 4단계 디자인 */
+.ii{width:20px;height:20px;flex:none;vertical-align:-5px;margin-right:4px}
+.inm{display:inline-flex;align-items:center;gap:2px}
+.taken span{display:inline-flex;align-items:center}
+.sitem .ico .ii{width:30px;height:30px;margin:0}
+.syn[hidden]{display:none!important}
+.intro{padding:8px 12px;font-size:12px;gap:2px;width:min(86%,380px)}
+.intro b{font-size:15px}
+/* 타이틀: 포켓몬들이 줄지어 지나가는 장면 */
+.parade{position:relative;width:100%;height:92px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.parade .ground{position:absolute;left:0;right:0;bottom:4px;height:14px;border-radius:50%;background:radial-gradient(ellipse at 50% 50%,rgba(140,220,120,.35),rgba(140,220,120,0) 70%)}
+.parade .walk{position:absolute;bottom:8px;left:-72px;width:64px;height:64px;animation:walk 19.2s linear infinite}
+.parade .walk .th{width:64px;height:64px;transform:scaleX(-1);animation:hop .5s ease-in-out infinite alternate}
+@keyframes walk{to{left:calc(100% + 8px)}}
+@keyframes hop{to{translate:0 -5px}}
+@media (prefers-reduced-motion:reduce){.parade .walk,.parade .walk .th{animation:none}.parade .walk{position:static;display:inline-block}.parade{display:flex;justify-content:center}}

@@ -188,8 +188,8 @@ const MEGA={
 };
 // 지닌 물건
 const ITEMS={
- scarf:{n:'구애스카프',d:'공격 속도 +40%',ic:'spd',r:'rare'},
- orb:{n:'생명의구슬',d:'공격 +50%',ic:'atk',r:'rare'},
+ scarf:{n:'구애스카프',d:'공격 속도 +30%',ic:'spd',r:'rare'},
+ orb:{n:'생명의구슬',d:'공격 +35%',ic:'atk',r:'rare'},
  left:{n:'먹다남은음식',d:'고유 스킬 확률과 재사용 속도 +60%',ic:'skill',r:'rare'},
  ribbon:{n:'팀 리본',d:'타입 시너지를 셀 때 2마리로 쳐요',ic:'type',r:'rare'},
  scope:{n:'초점렌즈',d:'치명타 확률 +25%',ic:'atk',r:'common'},

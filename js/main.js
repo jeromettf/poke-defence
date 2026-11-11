@@ -51,7 +51,7 @@ function schedule(){if(!MUS.on||!AC)return;const want=songNow();if(want!==MUS.so
 function cellAt(ev){const r=cv.getBoundingClientRect();const x=ev.clientX-r.left,y=toWY(ev.clientY-r.top);
   const c=Math.floor((x-G.bx)/G.cell),rr=Math.floor((y-G.by)/G.cell);if(c<0||rr<0||c>=COLS||rr>=ROWS)return -1;const i=rr*COLS+c;return OPEN[i]?i:-1;}
 const canEdit=()=>state.phase==='play';
-cv.addEventListener('pointerdown',ev=>{hideTip();if(state.paused&&state.phase==='play'&&$('oak').hidden&&$('layer').hidden){state.paused=false;syncPause();return;}if(!canEdit())return;const i=cellAt(ev);const r=cv.getBoundingClientRect();
+cv.addEventListener('pointerdown',ev=>{hideTip();if(state.paused&&state.phase==='play'&&$('oak').hidden&&$('layer').hidden&&!SPOT){state.paused=false;syncPause();return;}if(!canEdit())return;const i=cellAt(ev);const r=cv.getBoundingClientRect();
   down={i,x:ev.clientX,y:ev.clientY,moved:false};
   if(i>=0&&board[i]){drag={from:i,x:ev.clientX-r.left,y:ev.clientY-r.top};try{cv.setPointerCapture(ev.pointerId);}catch(e){}}});
 cv.addEventListener('pointermove',ev=>{if(!down||!drag)return;const r=cv.getBoundingClientRect();drag.x=ev.clientX-r.left;drag.y=ev.clientY-r.top;
@@ -91,7 +91,7 @@ function frame(ts){
   shake*=Math.pow(0.02,dt);
   if(recalcSoon){recalcSoon=false;recalc();}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').dataset.off='';}
-  tickIntro(dt);
+  tickIntro(dt);tickTut();tickSpot();
   {const sp=(state.phase==='play'&&!state.paused&&!state.cut)?state.speed:1;updParts(dt*sp);if(callout){callout.t-=dt;if(callout.t<=0)callout=null;}if(bumpT>0)bumpT-=dt;if(state.banner){state.banner.t-=dt;if(state.banner.t<=0)state.banner=null;}}
   for(let bi=0;bi<N;bi++){const u=board[bi];if(u&&u.ball){u.ball.t-=dt;if(u.ball.t<=0){u.ball=null;u.born=0.3;const c=cellCenter(bi);fx.push({k:'flash',x:c.x,y:c.y,r:G.cell*0.35,col:'#ffffff',t:.25,T:.25});fx.push({k:'ring',x:c.x,y:c.y+G.cell*0.18,r:G.cell*0.5,col:'#ffffff',t:.35,T:.35});burst(c.x,c.y,'페어리',8,0.9);}}}
   for(const u of board)if(u){if(u.cast>0)u.cast-=dt;if(u.born>0)u.born-=dt;if(u.pop>0)u.pop-=dt;if(u.lunge>0)u.lunge-=dt*(state.speed||1);if(u.evo){u.evo.t-=dt;if(u.evo.t<=0){u.evo=null;const bi=board.indexOf(u),c=cellCenter(bi);burst(c.x,c.y-G.cell*0.2,'페어리',14,1.3);fx.push({k:'flash',x:c.x,y:c.y-G.cell*0.2,r:G.cell*0.4,col:'#fff6c8',t:.3,T:.3});shake=Math.max(shake,u.tier===4?6:1.5);}}}
@@ -101,5 +101,5 @@ function frame(ts){
   requestAnimationFrame(frame);
 }
 readCols();layout();renderPanel();requestAnimationFrame(frame);
-loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}).then(r=>{const l=$('loading');if(l)l.remove();showTitle();const bad=r.filter(x=>!x).length;if(bad)setTimeout(()=>toast(`그림 파일 ${bad}개를 불러오지 못했어요. 새로고침해 보세요.`,4),600);});
+loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}).then(r=>{const l=$('loading');if(l)l.remove();if(isNewUser())startTutorial();else showTitle();const bad=r.filter(x=>!x).length;if(bad)setTimeout(()=>toast(`그림 파일 ${bad}개를 불러오지 못했어요. 새로고침해 보세요.`,4),600);});
 if(window.ResizeObserver){const ro=new ResizeObserver(()=>layout());ro.observe(stage);ro.observe($('dockbar'));ro.observe($('hud'));}

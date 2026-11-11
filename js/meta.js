@@ -45,15 +45,15 @@ function showTitle(){
   const best=REGIONS.filter(R=>PROG.best[R.id]).map(R=>`${R.n} ${PROG.clear[R.id]?'정복':'웨이브 '+PROG.best[R.id]}`).join(' · ');
   showModal(`<div class="title-wrap">
     <button class="ibtn mus" id="tMus" aria-label="음악">${MUS.on?'음악 켜짐':'음악 꺼짐'}</button>
-    <div class="title-mons">${[6,157,254].map(sprTag).join('')}</div>
+    <div class="parade" aria-hidden="true"><i class="ground"></i>${[25,4,7,1,155,158,152,255,258,252,133,147].map((id,k)=>`<span class="walk" style="animation-delay:${-k*1.6}s">${sprTag(id)}</span>`).join('')}</div>
     <div class="logo">포켓몬<br>랜덤 디펜스<small>관동·성도·호연, 그리고 챔피언로드</small></div>
     <div class="title-btns">${run?`<button class="gbtn summon" id="tCont">이어하기 <small>${rn.n} ${run.wave+(run.rw!=null?0:1)}웨이브</small></button>`:''}
      <button class="gbtn ${run?'':'summon'}" id="tStart">모험 떠나기</button>
-     <button class="gbtn" id="tMode">도전 모드</button>
-     <div class="row3"><button class="gbtn" id="tDex">도감</button><button class="gbtn" id="tAch">업적</button><button class="gbtn" id="tGuide">규칙</button></div></div>
+     <button class="gbtn" id="tMode" ${F('modes')?'':'aria-disabled="true" style="opacity:.55"'}>도전 모드${F('modes')?'':' <small>20웨이브에 열려요</small>'}</button>
+     <div class="row4"><button class="gbtn" id="tTut">연습</button><button class="gbtn" id="tDex">도감</button><button class="gbtn" id="tAch">업적</button><button class="gbtn" id="tGuide">규칙</button></div></div>
     <div class="best">${best||'아직 기록이 없어요'} · 별 ${totalStars()} · 도감 ${dexCount()}/${dexAll().length}</div></div>`);
   if(run)$('tCont').onclick=()=>resumeRun(run);
-  $('tStart').onclick=()=>showRegions({mode:'adv'});$('tGuide').onclick=showGuide;$('tMode').onclick=showModes;$('tDex').onclick=showDex;$('tAch').onclick=showAch;
+  $('tStart').onclick=()=>showRegions({mode:'adv'});$('tGuide').onclick=showGuide;$('tMode').onclick=()=>F('modes')?showModes():toast('도전 모드는 모험에서 20웨이브에 이르면 열려요.',2.4);$('tTut').onclick=startTutorial;$('tDex').onclick=showDex;$('tAch').onclick=showAch;
   $('tMus').onclick=()=>{MUS.on=!MUS.on;store.set('pkrtd-bgm',MUS.on?'1':'0');music();$('tMus').textContent=MUS.on?'음악 켜짐':'음악 꺼짐';};
 }
 

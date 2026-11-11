@@ -29,10 +29,11 @@ python3 -m http.server 8000
 | `js/content.js` | 판 안 콘텐츠: 랭크·규칙·출발 지원, 파트너, 지닌 물건, 메가진화, 특수 조합, 포획, 야생 강적, 운 뽑기, 미션, 일찍 부르기, 길 바꾸기, 레이드, 안내 카드, 오박사 |
 | `js/ui.js` | 소환·합성·판매, 보상과 상점, 기록과 이어하기, 덱·결과·메뉴 화면, HUD |
 | `js/meta.js` | 도감, 업적, 타이틀·지방·도전 모드 화면, 모드별 기록 |
+| `js/tutorial.js` | 5웨이브 연습 판(해 봐야 넘어가는 단계), 새 사용자용 기능 차례로 열기, 스포트라이트 안내 |
 | `js/render.js` | 캔버스 그리기, 파티클, 배너, 포획 볼, 날씨 |
 | `js/scene.js` | 전장 분위기: 바람 입자, 구름 그림자, 빛, 스킬 컷인, 외곽 소품 |
 | `js/main.js` | 효과음, 배경음악, 입력, 메인 루프, 시작 |
-| `sprites/anim-*.webp` | 움직이는 스프라이트 묶음(1024px 폭, 파일 이름에 내용 해시) |
+| `sprites/anim-*.webp` | 움직이는 스프라이트 묶음(1024px 폭, 파일 이름에 내용 해시). 그룹별(관동, 전설·메가, 성도, 호연·챔피언로드)로 묶여 있고, 타이틀이 뜬 뒤 지금 판에 필요한 그룹부터 받는다 |
 | `sprites/thumbs.webp` | 정지 썸네일 묶음(96px 칸) |
 
 스크립트는 모듈이 아닌 일반 스크립트로, 위 순서대로 읽는다. 맨 위 `const`/`let`은 파일끼리 공유된다.
@@ -42,7 +43,7 @@ python3 -m http.server 8000
 PokeAPI/sprites의 Showdown 움직이는 GIF를 `gifs/{도감번호}.gif`로 받아 둔 뒤:
 
 ```
-python3 tools/build_sprites.py gifs . ids.json
+python3 tools/build_sprites.py gifs . ids.json tools/sprite_groups.json
 python3 tools/build.py
 ```
 

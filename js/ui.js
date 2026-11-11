@@ -13,6 +13,7 @@ function summon(){
   const wts=state.deck.map(l=>mods.weight[l]||1),tot=wts.reduce((a,b)=>a+b,0);let rr=Math.random()*tot,line=state.deck[0];for(let q=0;q<wts.length;q++){rr-=wts[q];if(rr<=0){line=state.deck[q];break;}}
   // 합성 압박: 30% 확률로 이미 필드에 있는 1단계와 같은 계열이 나온다
   if(Math.random()<0.3){const t1=board.filter(v=>v&&v.tier===1&&!v.partner&&!isDitto(v)&&state.deck.includes(v.line));if(t1.length)line=pick(t1).line;}
+  if(state.tutForceN>0){line=state.tutForce;state.tutForceN--;}
   const ditto=LINES[line].mech==='ditto',egg=!ditto&&(state.eggs>0||Math.random()<mods.egg);if(egg&&state.eggs>0)state.eggs--;
   const u={line,tier:egg?2:1,nat:rnd(NATURES.length),form:0,cd:0.7,grow:0,born:0,ball:{t:0.42,T:0.42}};
   if(egg&&LINES[line].mech==='eevee')u.form=rnd(EEVEE.length);
@@ -32,7 +33,7 @@ function upgrade(k){
 }
 // 처음 한 번만 뜨는 안내
 let TIPS={};try{TIPS=JSON.parse(store.get('pkrtd-tips')||'{}');}catch(e){}
-function tip(id,msg,sec=3.2){if(TIPS[id])return;TIPS[id]=1;store.set('pkrtd-tips',JSON.stringify(TIPS));setTimeout(()=>toast(msg,sec),400);}
+function tip(id,msg,sec=3.2){if(TIPS[id]||state.mode==='tut')return;TIPS[id]=1;store.set('pkrtd-tips',JSON.stringify(TIPS));setTimeout(()=>toast(msg,sec),400);}
 function act(a,b){
   const ua=board[a],ub=board[b];if(!ua||a===b)return;
   if(!ub){board[b]=ua;board[a]=null;}
@@ -71,13 +72,15 @@ function sell(i){const u=board[i];if(!u)return;if(state.noSell)return toast('판
 const SAVE_KEY='pkrtd-run1',PROG_KEY='pkrtd-prog';
 function loadProg(){let p=null;try{p=JSON.parse(store.get(PROG_KEY)||'null');}catch(e){}
   if(!p){p={};const old=+(store.get('pkrtd-best2')||0);if(old)p={best:{kanto:old},clear:old>=MAXW?{kanto:true}:{}};}
-  for(const k of ['clear','best','badges','rank','stars','endless','raid','daily','st','ach','seen'])p[k]=p[k]||{};p.dex=p.dex||{};p.dex.o=p.dex.o||{};p.dex.s=p.dex.s||{};return p;}
+  for(const k of ['clear','best','badges','rank','stars','endless','raid','daily','st','ach','seen'])p[k]=p[k]||{};
+  // 기능 잠금은 기록이 없는 새 사용자에게만. 이미 해 본 사람은 전부 열어 둔다
+  if(!p.feat){p.feat={};if(Object.keys(p.best).length){for(const k of ['catch','early','shop','missions','wild','luck','mega','combo','modes'])p.feat[k]=1;p.tut=1;}}p.dex=p.dex||{};p.dex.o=p.dex.o||{};p.dex.s=p.dex.s||{};return p;}
 let PROG=loadProg();
 const saveProg=()=>store.set(PROG_KEY,JSON.stringify(PROG));
 function noteBadge(){if(state.mode!=='adv')return;const id=REGION.id;PROG.badges[id]=Math.max(PROG.badges[id]||0,state.badges);saveProg();}
 const trUnlocked=T=>!T.need||(T.need==='kanto'?!!PROG.clear.kanto:T.need==='johto4'?(PROG.badges.johto||0)>=4:T.need==='johto'?!!PROG.clear.johto:T.need==='hoenn4'?(PROG.badges.hoenn||0)>=4:false);
 const lineOpen=L=>!L.rg||(L.rg==='johto'?!!PROG.clear.kanto:!!PROG.clear.johto);
-function saveRun(extra){
+function saveRun(extra){if(state.mode==='tut')return;
   if(!state.deck||!state.deck.length||state.phase==='over')return;
   const U=u=>u&&{line:u.line,tier:u.tier,nat:u.nat,form:u.form,grow:u.grow||0,ss:u.ss||0,cnt:u.cnt||0,item:u.item||null,mega:u.mega||0,partner:u.partner||null,dealt:u.dealt||0};
   const E=e=>({t:e.t,name:e.name,sid:e.sid,hp:e.hp,max:e.max,sp:e.sp,p:e.p,big:e.big,fast:e.fast});
@@ -90,7 +93,7 @@ function saveRun(extra){
 }
 function loadRun(){try{const s=JSON.parse(store.get(SAVE_KEY)||'null');return s&&s.v>=2&&s.deck?s:null;}catch(e){return null;}}
 const clearRun=()=>store.set(SAVE_KEY,'');
-function resumeRun(s){
+function resumeRun(s){wantGroup(1);wantGroup(0);wantGroup(REGION_G[s.region]||0);
   const R=REGIONS.find(r=>r.id===s.region)||REGIONS[0];setRegion(R);
   mods=Object.assign(freshMods(),s.mods);
   state={info:state.info,phase:'play',deck:s.deck,up:s.up,coins:s.coins,wave:s.wave,waveT:0,waveLen:20,spawnLeft:0,spawnT:0,spawnGap:1,summons:s.summons,speed:s.speed||1,paused:false,
@@ -165,7 +168,7 @@ function openReward(g,resumed,again){
    <p class="sub">${again?'거대 관장 규칙: 보상을 하나 더 골라요.':'보상 하나를 고르면 바로 다음 웨이브가 시작돼요.'}${ng?` 다음 상대는 ${nx.w}웨이브 ${ng.raid?'전설 '+ng.n:ng.lead}(${ng.t.join('·')}).`:''}</p>
    <div class="rew">${opts.map((o,k)=>{const [rk,ic]=RMETA[o.id]||['common','atk'];return `<button class="card rcard ${rk}" data-r="${k}"><span class="ico" aria-hidden="true">${RICON[ic]}</span><span class="rt"><span class="rk">${RLAB[rk]}</span><span class="t">${o.title}</span><span class="d">${o.desc}</span></span></button>`;}).join('')}</div>
    ${state.rerolls>0?`<button class="gbtn" id="reroll">보상 다시 뽑기 · ${state.rerolls}번 남음</button>`:''}
-   ${shop.length?`<div class="shop"><div class="shop-h"><b>프렌들리숍</b><span class="coinv">${Math.floor(state.coins)}</span></div>${shop.map((o,k)=>`<button class="sitem" data-s="${k}" ${o.sold||state.coins<o.price?'disabled':''}><span class="ico">${RICON[o.ic]||RICON.coin}</span><span class="rt"><b>${o.n}</b><span>${o.d}</span></span><span class="pr">${o.sold?'구입함':o.price}</span></button>`).join('')}</div>`:''}
+   ${shop.length?`<div class="shop"><div class="shop-h"><b>프렌들리숍</b><span class="coinv">${Math.floor(state.coins)}</span></div>${shop.map((o,k)=>`<button class="sitem" data-s="${k}" ${o.sold||state.coins<o.price?'disabled':''}><span class="ico">${o.iid?itemIco(o.iid):RICON[o.ic]||RICON.coin}</span><span class="rt"><b>${o.n}</b><span>${o.d}</span></span><span class="pr">${o.sold?'구입함':o.price}</span></button>`).join('')}</div>`:''}
    </div>`);
    const sh=$('sheet');
    sh.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.r];o.ap();state.taken.push(o.id);state.takenNames.push(o.title);recalc();
@@ -175,11 +178,11 @@ function openReward(g,resumed,again){
   draw();
 }
 // 관장 보상 화면의 상점
-function shopOffers(){const out=[],its=shuffle(ITEM_POOL.slice()).slice(0,2);
-  for(const id of its){const I=ITEMS[id];out.push({n:I.n,d:I.d,ic:I.ic,price:I.r==='rare'?110:80,buy:()=>giveItem(id)});}
+function shopOffers(){if(!featOn('shop'))return [];const out=[],its=shuffle(ITEM_POOL.slice()).slice(0,2);
+  for(const id of its){const I=ITEMS[id];out.push({n:I.n,d:I.d,iid:id,price:I.r==='rare'?140:100,buy:()=>giveItem(id)});}
   out.push({n:'몬스터볼 2개',d:'체력이 40% 아래인 적을 잡아요',ic:'egg',price:45,buy:()=>{state.balls=Math.min(9,(state.balls||0)+2);}});
-  const megaOk=state.deck.some(l=>MEGA[LINES[l].n[2]])&&!state.bag.includes('stone')&&!board.some(u=>u&&(u.item==='stone'));
-  if(megaOk&&Math.random()<0.6)out.push({n:'메가스톤',d:ITEMS.stone.d,ic:'mega',price:170,buy:()=>giveItem('stone')});
+  const megaOk=F('mega')&&state.deck.some(l=>MEGA[LINES[l].n[2]])&&!state.bag.includes('stone')&&!board.some(u=>u&&(u.item==='stone'));
+  if(megaOk&&Math.random()<0.6)out.push({n:'메가스톤',d:ITEMS.stone.d,iid:'stone',price:170,buy:()=>giveItem('stone')});
   else if(Math.random()<0.35)out.push({n:'마스터볼',d:'야생 강적도 반드시 잡아요',ic:'egg',price:150,buy:()=>{state.master=(state.master||0)+1;}});
   return out;}
 
@@ -264,7 +267,7 @@ function showDraft(tab='tr',R=REGION,opt={mode:'adv'}){
   sh.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>render(b.dataset.tab));
   render(tab);
 }
-function finish(win,reason){
+function finish(win,reason){if(state.mode==='tut')return tutDone(win);
   state.phase='over';state.sel=-1;renderPanel();closeLayer();clearRun();hideTip();
   const id=REGION.id,reached=win?MAXW:state.wave,adv=state.mode==='adv',first=adv&&win&&!PROG.clear[id];achNew=[];
   if(adv){PROG.best[id]=Math.max(reached,PROG.best[id]||0);if(win)PROG.clear[id]=true;PROG.badges[id]=Math.max(PROG.badges[id]||0,state.badges);}saveProg();
@@ -289,7 +292,7 @@ function finish(win,reason){
 }
 function misBox(){if(!state.missions)return '';return `<div class="box"><b>미션 <small class="sub">${state.mDone||0}개 완료 · 판마다 6개까지</small></b>${state.missions.length?state.missions.map(m=>{const d=misDef(m),v=Math.min(d.goal,Math.max(0,misVal(m)));return `<div class="mis"><span>${d.n}</span><span class="barw"><i style="width:${v/d.goal*100}%"></i></span><small class="tnum">${v}/${d.goal} · ${MREW[m.rw]}</small></div>`;}).join(''):'<span class="sub">이번 판 미션을 모두 끝냈어요.</span>'}</div>`;}
 function partnerBox(){const u=board.find(v=>v&&v.partner);if(!u)return '';const P=u.partner;
-  return `<div class="box"><b>파트너 ${def(u).n} Lv${P.lv}</b>${P.lv<10?`<span class="barw"><i style="width:${P.xp/XPN(P.lv)*100}%"></i></span><span class="sub">다음 레벨까지 ${XPN(P.lv)-P.xp} · 쓰러뜨리면 1, 웨이브를 넘기면 6, 관장은 20</span>`:'<span class="sub">최고 레벨이에요.</span>'}
+  return `<div class="box"><b>파트너 ${def(u).n} Lv${P.lv}</b>${P.lv<10?`<span class="barw"><i style="width:${P.xp/XPN(P.lv)*100}%"></i></span><span class="sub">다음 레벨까지 ${XPN(P.lv)-P.xp} · 쓰러뜨리면 2, 웨이브를 넘기면 8, 관장은 25</span>`:'<span class="sub">최고 레벨이에요.</span>'}
    <span class="sub">${[3,5,7,10].map(l=>`${P.lv>=l?'✓':'·'} Lv${l} ${PERK[l]}`).join('<br>')}</span></div>`;}
 function showMissions(){if(!state.missions)return;const wasPaused=state.paused;state.paused=true;syncPause();
   showLayer(`<div class="scr-head">${backBtn}<h2>이번 판 미션</h2></div><div class="scr-body">${misBox()}${partnerBox()}</div>`);
@@ -305,7 +308,7 @@ function showMenu(){
     ${state.trainer?`<div class="box"><b>${state.trainer.n} 덱</b><span class="sub">${state.trainer.desc}</span></div>`:''}
     ${misBox()}
     ${partnerBox()}
-    <div class="box"><b>가방</b><span class="sub">몬스터볼 ${state.balls||0}개${state.master?` · 마스터볼 ${state.master}개`:''}</span>${state.bag.length?`<div class="taken">${state.bag.map(id=>`<span>${ITEMS[id].n}</span>`).join('')}</div><span class="sub">포켓몬을 누르고 '물건'을 고르면 쥐여 줄 수 있어요.</span>`:'<span class="sub">지닌 물건이 없어요. 미션, 야생 강적, 관장 상점에서 얻어요.</span>'}</div>
+    <div class="box"><b>가방</b><span class="sub">몬스터볼 ${state.balls||0}개${state.master?` · 마스터볼 ${state.master}개`:''}</span>${state.bag.length?`<div class="taken">${state.bag.map(id=>`<span>${itemIco(id)}${ITEMS[id].n}</span>`).join('')}</div><span class="sub">포켓몬을 누르고 '물건'을 고르면 쥐여 줄 수 있어요.</span>`:'<span class="sub">지닌 물건이 없어요. 미션, 야생 강적, 관장 상점에서 얻어요.</span>'}</div>
     ${state.rules&&state.rules.length?`<div class="box"><b>붙은 규칙</b>${state.rules.map(r=>`<span class="sub">${RULES[r].n}: ${RULES[r].d}</span>`).join('')}</div>`:''}
     ${state.rank?`<div class="box"><b>챔피언 랭크 ${state.rank}</b><span class="sub">${RANKS.slice(1,state.rank+1).map(r=>r.d).join(' · ')}</span></div>`:''}
     ${names.length?`<div class="box"><b>받은 보상</b><div class="taken">${names.map(n=>`<span>${n}</span>`).join('')}</div></div>`:''}
@@ -329,7 +332,7 @@ function showMenu(){
 
 // ───────── 패널·HUD ─────────
 let toastT=0;
-function toast(msg,sec=1.4){const t=$('toast');t.textContent=msg;delete t.dataset.off;toastT=sec;}
+function toast(msg,sec=1.4){const t=$('toast');t.textContent=msg;delete t.dataset.off;toastT=Math.max(1.8,sec);}
 function inAura(i,j){const v=board[i];if(!v)return false;const rad=Math.min(v.tier,3)>=3?2:1;return Math.max(Math.abs(i%COLS-j%COLS),Math.abs(((i/COLS)|0)-((j/COLS)|0)))<=rad;}
 function auraVal(m,t){if(m==='auraAll')return '+60%·+40%';const v=AURA[m][t-1]*(m==='auraType'?1:1+mods.supp);return m==='auraRange'?'+'+v.toFixed(1)+'칸':m==='auraType'?'×'+v:m==='auraCrit'?'+'+Math.round(v*100)+'%':'+'+Math.round(v*100)+'%';}
 function renderPanel(){
@@ -391,8 +394,10 @@ function showUpTip(k){
   t.onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;if(b.dataset.t==='go'){upgrade(k);showUpTip(k);}else hideTip();};
 }
 function hideTip(){$('tip').hidden=true;}
+// 시너지 줄: 켜진 시너지와 한 마리만 더 있으면 켜지는 것만 보여 주고, 없으면 줄을 접는다
 function renderSyn(){
-  const ks=Object.keys(synCount).sort((a,b)=>synCount[b]-synCount[a]);
+  const ks=Object.keys(synCount).filter(t=>synCount[t]>=synTh(t)[0]-1).sort((a,b)=>synCount[b]-synCount[a]);
+  $('syn').hidden=!ks.length;
   $('syn').innerHTML=ks.map(t=>{const c=synCount[t],[th1,th2]=synTh(t);
     return `<span class="s ${c>=th2?'on2':c>=th1?'on':''}" title="${t}: ${th1}마리 +20%, ${th2}마리 +45%">${ti(t)}${c}/${c>=th1?th2:th1}</span>`;}).join('');
 }
@@ -402,19 +407,22 @@ let hudKey='';
 function placeOverlays(){
   const dockH=$('dockbar').offsetHeight;
   const hb=$('hud').offsetTop+$('hud').offsetHeight;
-  $('toast').style.top=(hb+6)+'px';$('toast').style.bottom='auto';$('tip').style.bottom=(dockH+52)+'px';$('intro').style.bottom=(dockH+52)+'px';
+  $('tip').style.bottom=(dockH+52)+'px';$('intro').style.bottom=(dockH+52)+'px';
   {const sub=document.querySelector('.hud-row.sub');$('bossbar').style.top=(sub?sub.offsetTop+$('hud').offsetTop-4:G.oy+6)+'px';}
   hudKey='';
 }
 function hud(){
   if(!state.waveTypes)return;
   $('wave').innerHTML=`<small>${state.mode==='raid'&&state.wave>RAID_FROM?'레이드':'웨이브'}</small><b>${state.mode==='raid'&&state.wave>RAID_FROM?state.wave-RAID_FROM:state.wave}<span style="font-size:14px;color:#a9b8e0">/${MAXW>=999?'∞':MAXW}</span></b>`;
-  {const nb=(state.balls||0)+(state.master||0),cc=catchable().length;$('catch').classList.toggle('ready',nb>0&&cc>0&&state.phase==='play');$('ballN').textContent=state.master?`${state.balls||0}+${state.master}`:(state.balls||0);}
-  {const e=$('early');if(canEarly()){e.hidden=false;e.innerHTML=`일찍<b>+${earlyBonus()}</b>`;}else e.hidden=true;}
-  {const wb=$('wildBtn');wb.hidden=!(state.phase==='play'&&(canWild()||state.wild));if(state.wild&&!state.wild.dead){wb.classList.add('on');wb.innerHTML=`<span class="face">${sprTag(state.wild.sid)}</span><b>${Math.ceil(state.wild.wT)}초</b>`;}else{wb.classList.remove('on');wb.innerHTML='<span class="wic">!</span>야생';}}
-  if(state.missions){const ms=state.missions.filter(m=>!m.done);const best=ms.length?Math.max(...ms.map(m=>Math.min(1,misVal(m)/misDef(m).goal))):1;$('mchip').innerHTML=`미션<b>${state.mDone||0}/6</b><i style="width:${best*100}%"></i>`;}
-  $('tbar').style.width=Math.max(0,Math.min(1,state.waveT/state.waveLen))*100+'%';
-  $('tline').classList.toggle('gym',!!gymAt(state.wave));
+  {const nb=(state.balls||0)+(state.master||0),cc=catchable().length;$('catch').hidden=!featOn('catch');$('luck').hidden=!featOn('luck');$('catch').classList.toggle('ready',nb>0&&cc>0&&state.phase==='play');$('ballN').textContent=state.master?`${state.balls||0}+${state.master}`:(state.balls||0);}
+  {const e=$('early');if(featOn('early')&&canEarly()){e.hidden=false;e.innerHTML=`일찍<b>+${earlyBonus()}</b>`;}else e.hidden=true;}
+  {const wb=$('wildBtn'),on=state.wild&&!state.wild.dead;wb.hidden=!featOn('wild')||!(state.phase==='play'&&(canWild()||on));
+   const k=on?'on'+state.wild.sid+Math.ceil(state.wild.wT):'off';if(wb.dataset.k!==k){wb.dataset.k=k;wb.classList.toggle('on',!!on);wb.innerHTML=on?`<span class="face">${sprTag(state.wild.sid)}</span><b>${Math.ceil(state.wild.wT)}</b>`:'<span class="wic">!</span><small>야생</small>';}}
+  {const mc=$('mchip');mc.hidden=!featOn('missions')||!state.missions;if(!mc.hidden){const ms=state.missions.filter(m=>!m.done);const best=ms.length?Math.max(...ms.map(m=>Math.min(1,misVal(m)/misDef(m).goal))):1;
+   const k=(state.mDone||0)+'-'+Math.round(best*20);if(mc.dataset.k!==k){mc.dataset.k=k;mc.innerHTML=`<svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2.5" fill="#fff"/><rect x="8.5" y="2.5" width="7" height="4" rx="1.5" fill="#ffd84a"/><path d="M8 11l2 2 4-4M8 17h8" stroke="#2f6fd6" stroke-width="2" fill="none" stroke-linecap="round"/></svg><b>${state.mDone||0}</b><i style="width:${best*100}%"></i>`;}}}
+  {const gw=!!gymAt(state.wave),fr=Math.max(0,Math.min(1,state.waveT/state.waveLen));
+   // 관장 웨이브는 남은 시간, 그 밖에는 다음 관장까지 다섯 웨이브 중 어디쯤인지
+   $('tbar').style.width=(gw?fr:(((state.wave-1)%5)+(1-fr))/5)*100+'%';$('tline').classList.toggle('gym',gw);}
   $('tsec').textContent=Math.max(0,Math.ceil(state.waveT))+'초';
   const coins=Math.floor(state.coins);$('coins').textContent=coins.toLocaleString('en-US');
   const cap=fieldCap(),n=enemies.length,r=n/cap;
@@ -439,14 +447,13 @@ function hud(){
     const [px,py]=G.pts[0];en.style.left=Math.max(6,px-G.lw*0.5)+'px';en.style.top=(toSY(py)-G.lw*0.45)+'px';
     const ea=$('early');ea.style.left=Math.max(6,px-G.lw*0.5)+'px';ea.style.top=(toSY(py)+G.lw*0.7)+'px';}
   else en.hidden=true;
-  const nx=nextGym(),gl=$('gymline');
-  if(nx&&state.phase!=='draft'){const gi=nx.g,gw=nx.w;gl.hidden=false;
-    gl.innerHTML=`<span class="face">${sprTag(gi.id)}</span><b>${gw-w<=0?'지금':gw-w+'웨이브'}</b>`;}
+  const nx=nextGym(),gl=$('pgym');
+  if(nx&&state.phase!=='draft'){gl.hidden=false;gl.innerHTML=`${sprTag(nx.g.id)}<b>${nx.w-w<=0?'지금':nx.w-w}</b>`;}
   else gl.hidden=true;
 }
 $('entry').addEventListener('click',()=>{const en=$('entry'),ww=+en.dataset.w,t=state.waveTypes[ww],g=gymAt(ww),wm=wmodAt(ww),weak=+en.dataset.weak;
   toast(`${ww}웨이브: ${g?`관장 ${g.lead}의 ${g.n}(${g.t.join('·')})`:t.join('·')+' 타입'}${wm?' · '+wm.n:''}${isNight(ww)?' · 밤':''}${weak?`. 내 공격 포켓몬 중 ${weak}마리의 공격이 잘 안 들어가요.`:'.'}`,2.6);});
-$('gymline').addEventListener('click',()=>{const nx=nextGym();if(!nx)return;const g=nx.g;toast(`${nx.w}웨이브 ${g.raid?'전설 레이드 '+g.n:g.lead+'의 '+g.n}(${g.t.join('·')}): ${g.desc}${g.raid?'':` 이기면 ${g.badge}(${g.bd}).`}`,3.4);});
+$('prog').addEventListener('click',()=>{const nx=nextGym();if(!nx)return;const g=nx.g;toast(`${nx.w}웨이브 ${g.raid?'전설 레이드 '+g.n:g.lead+'의 '+g.n}(${g.t.join('·')}): ${g.desc}${g.raid?'':` 이기면 ${g.badge}(${g.bd}).`}`,3.4);});
 $('early').addEventListener('click',callEarly);
 $('wildBtn').addEventListener('click',()=>{if(state.wild&&!state.wild.dead)return toast(`야생 ${state.wild.name}: ${Math.ceil(state.wild.wT)}초 안에 쓰러뜨려요. 체력이 25% 아래면 잡을 수도 있어요.`,2.2);callWild();});
 $('mchip').addEventListener('click',showMissions);
@@ -477,8 +484,8 @@ $('radial').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if
 // 물건 쥐여 주기
 function showItems(i){const u=board[i];if(!u)return;const t=$('tip');t.hidden=false;
   t.innerHTML=`<h4><span class="face">${sprTag(def(u).id)}</span>${def(u).n}에게 쥐여 줄 물건</h4>
-   ${u.item?`<p>지금 쥔 물건: <b>${ITEMS[u.item].n}</b> · ${ITEMS[u.item].d}</p>`:''}
-   <div class="bag">${state.bag.map((id,k)=>`<button class="dbtn ${id==='stone'?'gold':''}" data-k="${k}" ${id==='stone'&&!canHoldStone(u)?'disabled':''}>${ITEMS[id].n}<small>${ITEMS[id].d}</small></button>`).join('')||'<p>가방이 비었어요.</p>'}</div>
+   ${u.item?`<p class="inm">${itemIco(u.item)}지금 쥔 물건: <b>${ITEMS[u.item].n}</b> · ${ITEMS[u.item].d}</p>`:''}
+   <div class="bag">${state.bag.map((id,k)=>`<button class="dbtn ${id==='stone'?'gold':''}" data-k="${k}" ${id==='stone'&&!canHoldStone(u)?'disabled':''}><span class="inm">${itemIco(id)}${ITEMS[id].n}</span><small>${ITEMS[id].d}</small></button>`).join('')||'<p>가방이 비었어요.</p>'}</div>
    <div class="actions">${u.item&&!u.mega?'<button class="dbtn" data-k="off">내려놓기</button>':''}<button class="dbtn x" data-k="x">닫기</button></div>`;
   t.onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;if(k==='x')return hideTip();if(k==='off'){unequip(i);return showItems(i);}equip(i,+k);hideTip();renderRadial();};}
 // 운 뽑기

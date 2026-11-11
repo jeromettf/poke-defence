@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/game.css?v=d0917621">
+<link rel="stylesheet" href="css/game.css?v=baad44c6">
 </head>
 <body>
 <div class="app">
@@ -27,10 +27,10 @@
       <div class="plate coin" id="coins">0</div>
     </div>
     <div class="hud-row sub">
-      <div class="tline" id="tline"><i id="tbar"></i></div><span class="tsec" id="tsec">0초</span>
-      <button class="hchip mis" id="mchip">미션</button>
-      <button class="hchip wild" id="wildBtn" hidden></button>
-      <button class="gymchip" id="gymline" hidden></button>
+      <button class="prog" id="prog" aria-label="웨이브 진행과 다음 관장"><span class="ptrack" id="tline"><i id="tbar"></i></span><span class="pgym" id="pgym" hidden></span><span class="tsec" id="tsec">0초</span></button>
+      <button class="hico mis" id="mchip" aria-label="미션" hidden></button>
+      <button class="hico wild" id="wildBtn" aria-label="야생 강적" hidden></button>
+      <div class="news" id="toast" data-off></div>
     </div>
   </header>
 
@@ -38,7 +38,6 @@
   <button class="early" id="early" hidden></button>
   <div class="intro" id="intro" hidden></div>
   <div class="bossbar" id="bossbar" hidden><span class="bn" id="bbn"></span><div class="hp"><i id="bbh"></i></div><span class="bt" id="bbt"></span></div>
-  <div class="toast" id="toast" data-off></div>
   <div class="radial" id="radial" hidden></div>
 
   <div class="dockbar" id="dockbar">
@@ -56,21 +55,23 @@
   <section class="panel sheetcard" id="panel" aria-live="polite" hidden></section>
   <div class="tip" id="tip" hidden></div>
   <div class="oak" id="oak" hidden></div>
+  <div class="spot" id="spot" hidden><div class="hole" id="spotHole"></div><div class="finger" id="spotFinger" hidden></div><div class="bub" id="spotBub"></div></div>
 </div>
 
 <div class="modal" id="modal" hidden><div class="sheet" id="sheet"></div></div>
 <div class="modal top" id="layer" hidden><div class="sheet" id="lsheet"></div></div>
 <div class="loading" id="loading"><div class="logo">포켓몬<br>랜덤 디펜스</div><div class="lbar"><i id="lbar"></i></div><p>스프라이트 불러오는 중</p></div>
-<script src="js/sprites.js?v=700ecc5b"></script>
-<script src="js/data.js?v=1bc58022"></script>
-<script src="js/regions.js?v=8e5034f2"></script>
-<script src="js/core.js?v=121c2329"></script>
+<script src="js/sprites.js?v=701f2140"></script>
+<script src="js/data.js?v=25cd5bd7"></script>
+<script src="js/regions.js?v=91138f46"></script>
+<script src="js/core.js?v=28ca1566"></script>
 <script src="js/skills.js?v=b94ab2b2"></script>
-<script src="js/content.js?v=8b041d7e"></script>
-<script src="js/ui.js?v=cf23ef8c"></script>
-<script src="js/meta.js?v=b13df3a5"></script>
-<script src="js/render.js?v=d734771d"></script>
+<script src="js/content.js?v=e363039a"></script>
+<script src="js/ui.js?v=6010ea1b"></script>
+<script src="js/meta.js?v=8ce62f2c"></script>
+<script src="js/tutorial.js?v=71ee5aa6"></script>
+<script src="js/render.js?v=67d2eb1c"></script>
 <script src="js/scene.js?v=76c556fa"></script>
-<script src="js/main.js?v=68991619"></script>
+<script src="js/main.js?v=28f22615"></script>
 </body>
 </html>
