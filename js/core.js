@@ -193,7 +193,7 @@ function buildBg(){
   // 길: 둥근 모서리 띠
   b.save();b.lineJoin='round';tracePath(b);b.shadowColor='rgba(0,0,0,.28)';b.shadowBlur=6;b.shadowOffsetY=2;b.lineWidth=lw+3;b.strokeStyle=hexA(pd,0.55);b.stroke();b.restore();
   b.save();b.lineJoin='round';tracePath(b);b.lineWidth=lw;b.strokeStyle=p0;b.stroke();b.restore();
-  {const t=document.createElement('canvas');t.width=bg.width;t.height=bg.height;const tc=t.getContext('2d');tc.setTransform(G.dpr,0,0,G.dpr,0,0);
+  {const t=document.createElement('canvas');t.width=bg.width;t.height=bg.height;const tc=t.getContext('2d');tc.setTransform(G.dpr,0,0,G.dpr,0,-G.wTop*G.dpr);
    pathMotif(tc,th,rr,cell);tc.globalCompositeOperation='destination-in';tc.lineJoin='round';tracePath(tc);tc.lineWidth=lw;tc.strokeStyle='#000';tc.stroke();
    b.save();b.setTransform(1,0,0,1,0,0);b.drawImage(t,0,0);b.restore();}
   // 시작점 풀숲
