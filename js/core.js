@@ -49,7 +49,7 @@ const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
 
 // ───────── 상태 ─────────
 let mods,state,board=Array(N).fill(null),enemies=[],fx=[],projs=[],zones=[],synCount={},synB={};
-function freshMods(){return {skill:0,pp:0,typeBonus:{},lineBonus:{},weight:{},synRedT:{},t3:0,guardAll:false,dmgAll:0,rateAll:0,rangeAll:0,crit:0,se:2,nve:0.5,bossDmg:0,egg:0,dot:0,chain:0,splash:0,slow:0,stun:0,coinKill:0,intCap:8,intRate:0.1,costMult:1,upCost:1,cap:0,synRed:0,supp:0};}
+function freshMods(){return {skill:0,pp:0,typeBonus:{},lineBonus:{},weight:{},synRedT:{},t3:0,guardAll:false,dmgAll:0,rateAll:0,rangeAll:0,crit:0,se:2,nve:0.5,bossDmg:0,egg:0,dot:0,chain:0,splash:0,slow:0,stun:0,coinKill:0,intCap:8,intRate:0.1,costMult:1,upCost:1,cap:0,synRed:0,supp:0,catchB:0,weather:0};}
 mods=freshMods();
 state={phase:'draft',sel:-1,speed:1,paused:false,wave:0,coins:0,deck:[],up:[],taken:[],badges:0};
 
@@ -60,7 +60,9 @@ function def(u){
   const L=LINES[u.line];
   if(L.mech==='eevee'&&u.tier>=2){const f=EEVEE[u.form],B=MECH_BASE[f.mech];
     return {n:f.n,id:f.id,t:f.t,role:f.role,mech:f.mech,dmg:B.dmg*1.2,rate:B.rate,range:B.range};}
-  return {n:L.n[u.tier-1],id:L.id[u.tier-1],t:L.t,role:L.role,mech:L.mech,dmg:L.dmg,rate:L.rate,range:L.range};
+  const nm=L.n[u.tier-1];
+  if(u.mega){const M=MEGA[nm];if(M)return {n:M.n,id:M.id,t:M.t||L.t,role:L.role,mech:L.mech,dmg:L.dmg,rate:L.rate,range:L.range,mega:true};}
+  return {n:nm,id:L.id[u.tier-1],t:L.t,role:L.role,mech:L.mech,dmg:L.dmg,rate:L.rate,range:L.range};
 }
 function effU(u,a,defs){const c=CHART[a],nf=u.s.nveFix||0,sa=u.s.seAdd||0;let m=1;for(const d of defs){if(c[0].includes(d))m*=mods.se+sa;else if(c[1].includes(d))m*=Math.max(mods.nve,nf);else if(c[2].includes(d))m*=Math.max(0.25,nf*0.5);}return m;}
 const AURA={auraSkill:[.5,1,1.5],auraAll:[.6,.6,.6],auraRate:[.15,.3,.5],auraDmg:[.2,.4,.7],auraCrit:[.1,.2,.35],auraRange:[.4,.8,1.2],auraType:[.75,1,1],auraGuard:[.15,.3,.5]};
@@ -68,7 +70,7 @@ const isAura=m=>m in AURA;
 const isDitto=u=>u&&u.tier<4&&LINES[u.line].mech==='ditto';
 const keyOf=u=>u.tier===4?'L'+u.form:(LINES[u.line].mech==='eevee'&&u.tier>=2?'e'+u.form:'l'+u.line);
 function canMerge(a,b){
-  if(!a||!b||a===b||a.tier>=3||b.tier>=3)return false;
+  if(!a||!b||a===b||a.tier>=3||b.tier>=3||a.partner||b.partner)return false;
   const da=isDitto(a),db=isDitto(b);
   if(da&&db)return false;
   if(da||db)return true;
@@ -82,11 +84,16 @@ function calcStats(u,i){
   if(d.mech==='gyara')tm*=u.tier===1?0.1:1.8;
   if(d.mech==='hugepower'&&u.tier>=2)tm*=2;
   const night=isNight(state.wave),nb=night&&d.t.some(t=>t==='고스트'||t==='악')?0.3:0,noct=d.mech==='nocturnal';
-  let aR=0,aD=0,aC=0,aG=0,aS=0,cD=0,nveFix=0,seAdd=0,guard=false,bossB=0;
+  let aR=0,aD=0,aC=0,aG=0,aS=0,cD=0,nveFix=0,seAdd=0,guard=false,bossB=0,pair=0;
   const c=i%COLS,r=(i/COLS)|0;
-  for(let j=0;j<N;j++){const v=board[j];if(!v||j===i)continue;const m=def(v).mech;if(!isAura(m))continue;
+  if(u.mega)tm*=1.8+0.4*(u.mega-1);
+  // 짝꿍: 같은 줄 바로 옆 칸에 같은 계열
+  if(u.tier<4)for(const dc of [-1,1]){const cc=c+dc;if(cc<0||cc>=COLS)continue;const v=board[r*COLS+cc];if(v&&v.tier<4&&v.line===u.line&&!isDitto(v))pair++;}
+  for(let j=0;j<N;j++){const v=board[j];if(!v||j===i)continue;
+    if(v.partner&&v.partner.lv>=7&&Math.max(Math.abs(j%COLS-c),Math.abs(((j/COLS)|0)-r))<=1)aD=Math.max(aD,0.15);
+    const m=def(v).mech;if(!isAura(m))continue;
     const vt=Math.min(v.tier,3),rad=vt>=3?2:1,cc=j%COLS,rr=(j/COLS)|0;
-    if(Math.max(Math.abs(cc-c),Math.abs(rr-r))>rad)continue;const val=AURA[m][vt-1];
+    if(Math.max(Math.abs(cc-c),Math.abs(rr-r))>rad)continue;const val=AURA[m][vt-1]*(v.mega&&m!=='auraType'?1.4+0.15*(v.mega-1):1);
     if(m==='auraRate')aR=Math.max(aR,val*sb);
     else if(m==='auraDmg')aD=Math.max(aD,val*sb);
     else if(m==='auraCrit'){aC=Math.max(aC,val*sb);cD=Math.max(cD,[0.25,0.5,1][vt-1]*sb);}
@@ -99,17 +106,20 @@ function calcStats(u,i){
   const lv=lineLv(u.line);
   const grow=d.mech==='grow'?Math.min(1,(u.grow||0)*0.01):0;
   const lb=mods.lineBonus[u.line]||0,tb=mods.typeBonus[d.t[0]]||0,t3=u.tier>=3?mods.t3:0;
+  const it=u.item,P=state.pass||{},pl=u.partner?u.partner.lv:0;
+  // 날씨
+  let wm=1;const wk=weatherAt(state.wave);if(wk){const W=WEATHER[wk],k=1+mods.weather;if(d.t.some(t=>W.up.includes(t)))wm+=(wk==='sand'?0.35:0.4)*k;if(d.t.some(t=>W.down.includes(t)))wm-=0.25;}
   return {n:d.n,id:d.id,t:d.t,role:d.role,mech:d.mech,
-    dmg:d.dmg*tm*nat.dmg*(1+mods.dmgAll)*(1+syn)*(1+aD)*(1+0.3*lv)*(1+grow)*(1+lb)*(1+tb)*(1+t3)*(1+nb)*(noct&&night?2:1),
-    rate:d.rate*(1+0.12*(tr-1))*nat.rate*(1+mods.rateAll)*(1+aR)*(1+0.06*lv)*(noct&&!night?1.2:1),
-    range:(d.range+(d.range?0.25*(tr-1)+aG:0)+(noct&&!night?1:0))*nat.range*(1+mods.rangeAll),
-    crit:d.mech==='alwayscrit'?1:mods.crit+nat.crit+aC+(d.mech==='crit'?0.15+0.05*tr:0),
+    dmg:d.dmg*tm*nat.dmg*(1+mods.dmgAll)*(1+syn)*(1+aD)*(1+0.3*lv)*(1+grow)*(1+lb)*(1+tb)*(1+t3)*(1+nb)*(noct&&night?2:1)*(it==='orb'?1.5:1)*(1+0.1*pair)*(pl?1+0.12*(pl-1):1)*wm*(P.mew?1.15:1),
+    rate:d.rate*(1+0.12*(tr-1))*nat.rate*(1+mods.rateAll)*(1+aR)*(1+0.06*lv)*(noct&&!night?1.2:1)*(it==='scarf'?1.4:1)*(pl>=3?1.2:1),
+    range:(d.range+(d.range?0.25*(tr-1)+aG:0)+(noct&&!night?1:0)+(d.range&&it==='wide'?0.8:0)+(d.range&&u.mega?0.3:0))*nat.range*(1+mods.rangeAll),
+    crit:d.mech==='alwayscrit'?1:mods.crit+nat.crit+aC+(d.mech==='crit'?0.15+0.05*tr:0)+(it==='scope'?0.25:0)+(P.latios?0.1:0),
     critM:(d.mech==='crit'?3:2)+cD,
-    buff:{aR,aD,aC,aG,aS,nveFix,guard},skB:aS,nb,nveFix,seAdd,guard:guard||mods.guardAll,bossB,syn,lv,grow};
+    buff:{aR,aD,aC,aG,aS,nveFix,guard},skB:aS+(it==='left'?0.6:0)+(pl>=10?1:0),nb,nveFix,seAdd,guard:guard||mods.guardAll,bossB,syn,lv,grow,pair,wm};
 }
 const synTh=t=>{const r=mods.synRed+(mods.synRedT[t]||0);return [Math.max(1,3-r),Math.max(2,5-r)];};
 function recalc(){
-  const cnt={};for(const u of board)if(u&&!isDitto(u))for(const t of def(u).t)cnt[t]=(cnt[t]||0)+1;
+  const cnt={};state.pass={};for(const u of board)if(u){if(!isDitto(u))for(const t of def(u).t)cnt[t]=(cnt[t]||0)+(u.item==='ribbon'?2:1);if(u.tier===4&&LEGENDS[u.form].pass)state.pass[LEGENDS[u.form].pass]=1;if(typeof dexOwn==='function')dexOwn(def(u).id);}
   synCount=cnt;synB={};for(const t in cnt){const [th1,th2]=synTh(t);synB[t]=cnt[t]>=th2?0.45:cnt[t]>=th1?0.2:0;}
   for(let i=0;i<N;i++){const u=board[i];if(u)u.s=calcStats(u,i);}
   for(let i=0;i<N;i++){const u=board[i];if(u)u.canM=!isDitto(u)&&board.some((v,j)=>j!==i&&canMerge(u,v));}
@@ -120,7 +130,7 @@ function recalc(){
 const cv=$('cv'),ctx=cv.getContext('2d'),stage=$('stage');
 const G={W:300,H:300,cell:40,bx:0,by:0,m:0,pw:0,ph:0,per:1,dpr:1};
 const bg=document.createElement('canvas'),bgc=bg.getContext('2d');
-const themeIdx=()=>Math.min(7,Math.max(0,Math.floor(((state&&state.wave)||1)-1)/5|0));
+const themeIdx=()=>{const k=Math.max(0,Math.floor((((state&&state.wave)||1)-1)/5));return (typeof THEMES!=='undefined'?k%THEMES.length:Math.min(7,k));};
 let bgTheme=-1;
 const RATIO=()=>{const cell=(1-2*(0.115+0.025))/COLS;return cell*ROWS+2*(0.115+0.065);};
 // 3/4 시점: 시뮬레이션은 위에서 본 '세계 좌표' 그대로 두고, 화면에 그릴 때만 세로를 KY배로 누른다.
@@ -278,32 +288,49 @@ function rrectC(b,x,y,w,h,r){b.beginPath();b.moveTo(x+r,y);b.arcTo(x+w,y,x+w,y+h
 
 // ───────── 진행 ─────────
 const WMOD={fast:{n:'빠른 무리',hp:0.7,sp:2.0,cnt:1.6,col:'#6fd3ff'},swarm:{n:'대군',hp:0.55,sp:1.15,cnt:3.0,col:'#ffb347'},tank:{n:'단단한 적',hp:4,sp:0.72,cnt:0.5,col:'#c9a0ff',big:1.3}};
-function genWaves(){const w=[null],m=[null];for(let i=1;i<=MAXW;i++){const g=gymAt(i);if(g){w.push(g.t);m.push(null);continue;}
-  const a=isNight(i)&&Math.random()<0.6?pick(['고스트','악']):pick(TYPES);if(i>=12&&Math.random()<0.45){let b=pick(TYPES);while(b===a)b=pick(TYPES);w.push([a,b]);}else w.push([a]);
-  m.push(i>=6&&Math.random()<0.5?pick(['fast','swarm','tank']):null);}genWaves.m=m;return w;}
+// 웨이브 타입표. seed가 있으면(오늘의 도전) 같은 날 같은 순서. 끝없는 모드와 레이드는 넉넉히 만들어 둔다
+function genWaves(seed){const R=seed?mulberry(seed):Math.random,pk=a=>a[Math.floor(R()*a.length)],w=[null],m=[null],L=Math.min(400,MAXW);
+  for(let i=1;i<=L;i++){const g=gymAt(i);if(g){w.push(g.t);m.push(null);continue;}
+  const a=isNight(i)&&R()<0.6?pk(['고스트','악']):pk(TYPES);if(i>=12&&R()<0.45){let b=pk(TYPES);while(b===a)b=pk(TYPES);w.push([a,b]);}else w.push([a]);
+  m.push(i>=6&&R()<0.5?pk(['fast','swarm','tank']):null);}genWaves.m=m;return w;}
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const wmodAt=w=>state.wmods&&state.wmods[w]?WMOD[state.wmods[w]]:null;
-function newGame(deck,tr,R=REGION){
+function newGame(deck,tr,R=REGION,opt={}){
   setRegion(R);layout();mods=freshMods();
   state={info:state.info,phase:'play',deck,up:deck.map(()=>0),coins:100,wave:0,waveT:0,waveLen:20,spawnLeft:0,spawnT:0,spawnGap:1,summons:0,speed:state.speed||1,paused:false,
-    region:R.id,waveTypes:genWaves(),boss:null,bossDown:false,taken:[],takenNames:[],badges:0,kills:0,sel:-1,eid:0};
-  state.wmods=genWaves.m;
+    region:R.id,mode:opt.mode||'adv',rank:opt.rank||0,rules:opt.rules||[],seed:opt.seed||0,raidLeg:opt.raidLeg,daily:opt.daily||null,
+    boss:null,bossDown:false,taken:[],takenNames:[],badges:0,kills:0,sel:-1,eid:0};
+  if(state.mode==='endless')MAXW=999;if(state.mode==='raid')MAXW=999;
+  initRun(true);
+  state.waveTypes=genWaves(opt.seed);state.wmods=genWaves.m;
   board=Array(N).fill(null);enemies=[];fx=[];projs=[];zones=[];
   if(tr){tr.ap(mods,deck,state);state.trainer=tr;state.trIdx=TRAINERS.indexOf(tr);}
+  applySupport(opt.support);
+  placePartner();
   hudWave=-1;recalc();startWave();closeModal();
+  oakIntro();
 }
 function startWave(){
   saveRun();
-  const wasNight=isNight(state.wave);state.wave++;
-  if(state.wave>1){const it=Math.min(mods.intCap,Math.floor(state.coins*mods.intRate));if(it>0){state.coins+=it;toast(`이자 +${it}`,1.1);}}
+  const wasNight=isNight(state.wave),wasW=weatherAt(state.wave),oldVar=variantFor(state.wave);state.wave++;
+  if(variantFor(state.wave)!==oldVar&&REGION.variants.length>1)switchVariant(variantFor(state.wave));
+  if(state.wave>1&&!state.noInt){const it=Math.min(mods.intCap,Math.floor(state.coins*mods.intRate));if(it>0){state.coins+=it;toast(`이자 +${it}`,1.1);}}
+  if(state.wave>1&&state.pass&&state.pass.jirachi){state.coins+=25;}
+  for(const u of board)if(u)u.sb=0;
+  state.waveKills=0;if((state.wave-1)%5===0)state.wildReady=true;
   let gl=0;for(const u of board)if(u&&u.tier<4&&def(u).mech==='glutton')gl+=[3,7,15][Math.min(u.tier,3)-1];
   if(gl&&state.wave>1){state.coins+=gl;toast(`먹보 코인 +${gl}`,1);}
   const w=state.wave,g=gymAt(w);
   const wm=wmodAt(w);state.spawnLeft=g?Math.floor(countAt(w)/2):Math.round(countAt(w)*(wm?wm.cnt:1));
   state.spawnGap=12/Math.max(1,state.spawnLeft);state.spawnT=0;
-  state.waveT=g?50:20;state.waveLen=state.waveT;
+  state.waveT=g?Math.max(20,(g.raid?45:50)+(state.gymT||0)+(state.pass&&state.pass.dialga?10:0)):20;state.waveLen=state.waveT;
   if(g){spawnEnemy(true);state.cut={t:1.8,T:1.8,g};camP=camT=1.2;state.cutMsg=`${g.lead}의 ${g.n}. ${g.desc}`;shake=4;sfx('gym');}
   else state.banner={t:1.2,T:1.2,s:`WAVE ${w}`,sub:wmodAt(w)?wmodAt(w).n+(((w-1)%5===0)?' · '+THEMES[themeIdx()].n:''):(w-1)%5===0?THEMES[themeIdx()].n:(gymAt(w+1)?'다음은 관장전':'')};
   if(REGION.rule==='daynight'&&isNight(w)!==wasNight&&w>1){recalc();if(state.banner)state.banner.sub=(isNight(w)?'밤이 됐어요':'날이 밝았어요')+' · '+THEMES[themeIdx()].n;}
+  {const wk=weatherAt(w);if(wk&&wk!==wasW){recalc();if(state.banner)state.banner.sub='날씨: '+WEATHER[wk].n+' · '+THEMES[themeIdx()].n;introCard('w_'+wk,'날씨: '+WEATHER[wk].n,WEATHER[wk].d+'. 5웨이브 동안 이어져요.');}}
+  if(wm)introCard('wm_'+state.wmods[w],wm.n,WM_DESC[state.wmods[w]]);
+  if(isNight(w)&&!wasNight)introCard('night','밤',REGION.ruleDesc);
+  recalc();
   state.phase='play';
 }
 function mkEnemy(o){
@@ -312,21 +339,24 @@ function mkEnemy(o){
 }
 function spawnEnemy(isBoss){
   const w=state.wave,t=state.waveTypes[w];
-  if(isBoss){const g=gymAt(w),hp=hpAt(w)*g.hp*0.85;
-    state.boss=mkEnemy({t:g.t,name:g.n,sid:g.id,hp,max:hp,sp:g.sp,boss:true,gim:g.gim,gT:{seed:4,paralyze:6,recover:8,tailwind:5,hypnosis:5,detect:4,hail:6,ddance:10}[g.gim]||7,sp0:g.sp});
+  const spm=state.spMul||1;
+  if(isBoss){const g=gymAt(w),hp=hpAt(w)*g.hp*0.85*(state.bossMul||1);
+    state.boss=mkEnemy({t:g.t,name:g.n,sid:g.id,hp,max:hp,sp:g.sp*spm,boss:true,gim:g.gim,gT:{seed:4,paralyze:6,recover:8,tailwind:5,hypnosis:5,detect:4,hail:6,ddance:10,bulk:8,truant:3}[g.gim]||7,sp0:g.sp*spm});
+    if(typeof dexSeen==='function')dexSeen(g.id);
     return;}
   const wm=wmodAt(w),hp=hpAt(w)*(wm?wm.hp:1),[name,sid]=pick(ENEMY[t[0]]);
-  mkEnemy({t,name,sid,hp,max:hp,sp:wm?wm.sp:1.15,big:wm&&wm.big?wm.big:1,fast:wm===WMOD.fast});
+  mkEnemy({t,name,sid,hp,max:hp,sp:(wm?wm.sp:1.15)*spm,big:wm&&wm.big?wm.big:1,fast:wm===WMOD.fast});
+  if(typeof dexSeen==='function')dexSeen(sid);
 }
 function endWave(){
   const w=state.wave;state.coins+=8+w;
   const g=gymAt(w);
-  if(g){g.ap(mods);state.badges++;recalc();}
-  if(g)noteBadge();
+  partnerXp(6);
+  if(g){g.ap(mods);state.badges++;state.balls=Math.min(6,(state.balls||0)+1);recalc();noteBadge();gymStars(g);}
   if(w>=MAXW)return finish(true,REGION.win);
   if(g||w===2)openReward(g);else startWave();
 }
-const fieldCap=()=>60+mods.cap;
+const fieldCap=()=>(state.capBase||60)+mods.cap;
 
 function update(dt){
   const w=state.wave;
@@ -337,7 +367,7 @@ function update(dt){
     if(e.yawnT>0){e.yawnT-=dt;if(e.yawnT<=0&&!e.boss){e.stunT=Math.max(e.stunT,e.yawnS||3);e.sleep=true;}}
     if(e.confT>0)e.confT-=dt;if(e.markT>0)e.markT-=dt;if(e.frzT>0)e.frzT-=dt;
     if(e.zapT>0)e.zapT-=dt;
-    const v=e.stunT>0?0:e.sp*(1-(e.slowT>0?e.slowV:0))*(e.confT>0?-0.8:1)*(state.windT>0?1.5:1);
+    const v=e.stunT>0||e.rest?0:e.sp*(1-(e.slowT>0?e.slowV:0))*(e.confT>0?-0.8:1)*(state.windT>0?1.5:1)*(state.pass.lugia?0.88:1)*(weatherAt(w)==='hail'?0.9:1);
     e.p=(e.p+v*G.cell/G.per*dt+1)%1;const q=pathPos(e.p);if(q.dx)e.dx=q.dx;e.mdx=q.dx;e.mdy=q.dy;e.x=q.x;e.y=q.y;
     e.slowT-=dt;e.debT-=dt;if(e.hitT>0)e.hitT-=dt;if(e.kb>0)e.kb=Math.max(0,e.kb-dt*G.cell*1.2);if(e.dT>0){e.dT-=dt;if(e.dT<=0)flushPop(e);}if(e.popT>0)e.popT-=dt;if(e.critT>0)e.critT-=dt;if(e.stunT>0){e.stunT-=dt;if(e.stunT<=0)e.sleep=false;}
     if(e.poisT>0){e.poisT-=dt;dmgRaw(e,e.poisD*dt,null);}
@@ -347,6 +377,7 @@ function update(dt){
   for(const z of zones){z.t-=dt;if(z.once){for(const e of enemies)if(!e.dead&&!z.hit.has(e.id)&&Math.hypot(e.x-z.x,e.y-z.y)<=z.r){z.hit.add(e.id);hit(z.u,e,z.dmg,'바위','rocks');burst(e.x,e.y-G.cell*0.1,'바위',3,0.7);}continue;}
     for(const e of enemies)if(!e.dead&&Math.hypot(e.x-z.x,e.y-z.y)<=z.r)dmgRaw(e,z.dps*dt*(e.debT>0?1+e.debV:1),z.u);}
   zones=zones.filter(z=>z.t>0);
+  updRun(dt);
   for(let i=0;i<N;i++){
     const u=board[i];if(!u)continue;
     if(u.ball)continue;
@@ -354,12 +385,12 @@ function update(dt){
     if(isAura(u.s.mech)){const sk=skillOf(u);if(sk){u.sk=(u.sk==null?4:u.sk)-dt;if(u.sk<=0&&enemies.length){castBuff(u,i,sk);u.sk=(u.tier>=3?5:7)/(1+mods.skill);}}continue;}
     if(u.charge){u.charge.t-=dt;if(u.charge.t<=0){const go=u.charge.go;u.charge=null;go();}continue;}
     {const sk0=skillOf(u);if(sk0&&sk0.cd&&u.sk!=null&&u.sk>0)u.sk-=dt;}
-    if(u.parT>0){u.parT-=dt;continue;}
+    if(u.parT>0){u.parT-=dt;if(u.parT<=0)u.slp=false;continue;}
     u.cd-=dt*(state.hailT>0&&!u.s.t.includes('얼음')?0.6:1);if(u.cd>0)continue;
     const c=cellCenter(i),R=(u.s.range+(u.bf&&u.bf.range?1:0))*G.cell;
-    const inR=enemies.filter(e=>!e.dead&&Math.hypot(e.x-c.x,e.y-c.y)<=R);
+    const inR=enemies.filter(e=>!e.dead&&!e.caught&&Math.hypot(e.x-c.x,e.y-c.y)<=R);
     if(!inR.length){u.cd=0;continue;}
-    const rate=u.s.rate*(1+(u.bf&&u.bf.rate||0));
+    const rate=u.s.rate*(1+(u.bf&&u.bf.rate||0))*(u.s.mech==='speedboost'?1+0.03*(u.sb||0):1);
     const sk=skillOf(u);
     if(sk&&sk.cd){u.sk=(u.sk==null?sk.cd*0.5:u.sk)-0;}
     if(sk&&sk.cd){if(u.sk<=0){if(castSkill(u,i,c,inR,sk)){u.sk=skillCd(u,sk);u.cd=1/rate;continue;}}}
@@ -381,6 +412,7 @@ function bossTick(e,dt){
   if(g==='smoke'){e.smokeT-=dt;}
   if(e.protT>0)e.protT-=dt;
   if(g==='milk'){e.sp=e.sp0*(1+Math.min(1,e.age/40));if(!e.milked&&e.hp<e.max*0.5){e.milked=true;e.hp+=e.max*0.4;fx.push({k:'ring',x:e.x,y:e.y,r:G.cell*0.9,col:'#ffffff',t:.6,T:.6});fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.6,s:'우유마시기',col:'#fff',big:true,t:.9,T:.9});}return;}
+  if(g==='truant'){e.gT-=dt;if(e.gT<=0){e.rest=!e.rest;e.gT=3;if(e.rest&&!(e.popT>0)){fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.6,s:'게으름',col:'#e8dcc0',t:.8,T:.8});}}return;}
   if(g==='iron'||g==='armor')return;
   if(g==='sturdy'||g==='blaze'||g==='final')return;
   e.gT-=dt;if(e.gT>0)return;
@@ -391,9 +423,10 @@ function bossTick(e,dt){
   else if(g==='smoke'){e.gT=7;e.smokeT=3;}
   else if(g==='tailwind'){e.gT=8;state.windT=4;fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.6,s:'순풍',col:'#cfe8ff',big:true,t:.9,T:.9});for(let k=0;k<12;k++)burst(Math.random()*G.W,Math.random()*G.H,'비행',1,1.5);}
   else if(g==='hypnosis'){e.gT=7;const us=[];for(let i=0;i<N;i++){const u=board[i];if(!u||u.s.guard||isAura(u.s.mech))continue;const c=cellCenter(i);us.push({u,c,d:Math.hypot(c.x-e.x,c.y-e.y)});}
-    us.sort((a,b)=>a.d-b.d).slice(0,2).forEach(o=>{o.u.parT=3;fx.push(mkBolt(e,o.c,'#b28ce0',.4));fx.push({k:'txt',x:o.c.x,y:o.c.y-G.cell*0.5,s:'쿨쿨',col:'#d9c6ff',t:1,T:1});});}
+    us.sort((a,b)=>a.d-b.d).slice(0,2).forEach(o=>{o.u.parT=3;o.u.slp=true;fx.push(mkBolt(e,o.c,'#b28ce0',.4));fx.push({k:'txt',x:o.c.x,y:o.c.y-G.cell*0.5,s:'쿨쿨',col:'#d9c6ff',t:1,T:1});});}
   else if(g==='detect'){e.gT=6;e.protT=1.5;fx.push({k:'ring',x:e.x,y:e.y,r:G.cell*0.7,col:'#ffe08a',t:1.5,T:1.5});}
   else if(g==='hail'){e.gT=9;state.hailT=3;fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.6,s:'싸라기눈',col:'#e8fbff',big:true,t:.9,T:.9});for(let k=0;k<16;k++)burst(Math.random()*G.W,Math.random()*G.H*0.6,'얼음',1,1);}
+  else if(g==='bulk'){e.gT=8;if((e.dd||0)<3){e.dd=(e.dd||0)+1;fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.6,s:'벌크업',col:'#ffb0a0',big:true,t:.9,T:.9});fx.push({k:'ring',x:e.x,y:e.y,r:G.cell*0.8,col:'#d4473f',t:.5,T:.5});}}
   else if(g==='ddance'){e.gT=10;if((e.dd||0)<3){e.dd=(e.dd||0)+1;e.sp=e.sp0*Math.pow(1.2,e.dd);fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.6,s:'용의춤',col:'#9fb2ff',big:true,t:.9,T:.9});fx.push({k:'ring',x:e.x,y:e.y,r:G.cell*0.8,col:'#8256f7',t:.5,T:.5});}}
   else if(g==='teleport'){e.gT=7;fx.push({k:'puff',x:e.x,y:e.y,r:G.cell*0.6,col:'#f76693',t:.4,T:.4});e.p=(e.p+0.25+Math.random()*0.35)%1;}
 }
@@ -405,6 +438,7 @@ function chooseTarget(inR,mech){
 function attack(u,c,inR){
   const s=u.s,mech=s.mech,at=s.t[0];
   if(mech==='slowstart')u.ss=(u.ss||0)+1;
+  if(mech==='speedboost')u.sb=Math.min(30,(u.sb||0)+1);
   {const ft=inR.find(e=>e.boss)||inR[0],dx=ft.x-c.x,dy=ft.y-c.y,L=Math.hypot(dx,dy)||1;u.face=dx>0?1:-1;if(!isAura(mech)&&mech!=='quake'&&mech!=='rain'&&mech!=='glutton'&&mech!=='sing'){u.lunge=0.18;u.lx=dx/L;u.ly=dy/L;}}
   if(mech==='quake'||mech==='rain'||mech==='glutton'){
     for(const e of inR)hit(u,e,s.dmg,at,mech);
@@ -463,11 +497,12 @@ function impact(u,tg,mech,at){
   if(mech==='zone'&&zones.length<40)zones.push({x:tg.x,y:tg.y,r:0.7*G.cell*(1+mods.splash),dps:s.dmg*0.9*(1+mods.dot),t:2.5,T:2.5,u,col:TYPE_COLOR['독']});
 }
 function hit(u,e,base,at,mech){
-  if(e.dead)return 1;
+  if(e.dead||e.caught)return 1;
   let m=effU(u,at,e.t);if(u.bf&&u.bf.se&&m<2)m=2;let d=base*m*(u.bf&&u.bf.dmg?2:1);e.hitT=0.08;e.hpLast=clock;
   if(!(e.popT>0)&&fx.length<200){if(m>=2){const long=seCD<=0;if(long)seCD=4;fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.45,s:long?'효과가 굉장했다!':'굉장!',big:long,col:'#ffd36b',t:.6,T:.6});e.popT=0.8;}else if(m<1){fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.45,s:'별로…',col:'#a9b4ae',t:.6,T:.6});e.popT=0.8;}}
   if(e.debT>0)d*=1+e.debV;
-  if(e.sleep&&e.stunT>0)d*=1.5;if(e.confT>0)d*=1.25;if(e.zapT>0)d*=1.3;
+  if(e.sleep&&e.stunT>0)d*=state.pass.darkrai?2:1.5;
+  if((e.boss||e.wild)&&u.item==='band')d*=1.5;if(e.confT>0)d*=1.25;if(e.zapT>0)d*=1.3;
   if(mech==='jaws'&&e.hp>e.max*0.5)d*=1.6;
   if(mech==='slowstart')d*=1+Math.min(3,(u.ss||0)/40);
   if(mech==='punch'){if(u.pT===e.id)u.pS=Math.min(5,(u.pS||0)+1);else{u.pT=e.id;u.pS=0;}d*=1+0.15*u.pS;}
@@ -499,10 +534,14 @@ function hit(u,e,base,at,mech){
   return m;
 }
 function dmgRaw(e,d,u){
-  if(e.dead)return;if(u)u.dealt=(u.dealt||0)+Math.min(d,Math.max(0,e.hp));e.hp-=d;
+  if(e.dead||e.caught)return;if(u)u.dealt=(u.dealt||0)+Math.min(d,Math.max(0,e.hp));e.hp-=d;
   if(e.hp<=0){e.dead=true;state.kills++;
     let c=1+Math.floor(state.wave/8)+mods.coinKill;
     if(u&&u.s.mech==='coin')c+=Math.min(u.tier,3);
+    if(u&&u.item==='amulet')c+=2;
+    state.waveKills=(state.waveKills||0)+1;
+    if(u&&u.partner)partnerXp(e.boss?20:1,u);
+    if(e.wild)wildDown(e);
     if(u&&u.s.mech==='grow'&&(u.grow||0)<100){u.grow=(u.grow||0)+1;if(u.grow%10===0)recalcSoon=true;}
     state.coins+=c;flushPop(e);
     if(e.spread&&e.poisT>0){let n=0;for(const o of enemies){if(o===e||o.dead||n>=3)continue;if(Math.hypot(o.x-e.x,o.y-e.y)<=G.cell*1.1){o.poisD=Math.max(o.poisT>0?o.poisD:0,e.poisD*0.8);o.poisT=3;o.spread=true;o.tox=e.tox;n++;fx.push({k:'skbeam',x1:e.x,y1:e.y,x2:o.x,y2:o.y,w:G.cell*0.06,col:'#b25cb0',t:.3,T:.3});}}}

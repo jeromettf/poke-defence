@@ -61,26 +61,80 @@ const JOHTO_THEMES=[
  {n:'검은먹시티 용의 굴',ground:'water',g:['#2f5f8a','#2a557d','#4a7eaa','#1b3c5a'],border:'rocks',path:'bridge',p:['#8a7a66','#7a6a56','#a2927c','#4a3e30'],tall:false,
   plat:{rim:'#d6e2ee',top:'#6d8aa6',side:'#3a5068',tex:'#86a2bc',kind:'rock'}},
 ];
+const HOENN_GYMS=[
+ {lead:'원규',n:'코코파스',id:299,t:['바위'],hp:7,sp:0.5,gim:'sturdy',desc:'옹골참: 효과가 굉장한 공격이 아니면 피해 40% 감소.',badge:'스톤배지',bd:'필드 적 제한 +10',ap:m=>{m.cap+=10;},col:'#b08a5a'},
+ {lead:'철구',n:'하리뭉',id:297,t:['격투'],hp:13,sp:0.65,gim:'bulk',desc:'벌크업: 8초마다 받는 피해가 15%씩 줄어요(3번까지).',badge:'너클배지',bd:'모든 포켓몬 공격 +8%',ap:m=>{m.dmgAll+=0.08;},col:'#d4473f'},
+ {lead:'암페어',n:'썬더볼트',id:310,t:['전기'],hp:17,sp:0.8,gim:'paralyze',desc:'방전: 6초마다 가까운 포켓몬들을 2초 마비시켜요.',badge:'다이나모배지',bd:'이자 상한 +5',ap:m=>{m.intCap+=5;},col:'#f5d43a'},
+ {lead:'민지',n:'코터스',id:324,t:['불꽃'],hp:21,sp:0.45,gim:'smoke',desc:'연막: 7초마다 3초 동안 공격의 40%가 빗나가요.',badge:'히트배지',bd:'독·화상·장판 피해 +30%',ap:m=>{m.dot+=0.3;},col:'#f08a3c'},
+ {lead:'종길',n:'게을킹',id:289,t:['노말'],hp:30,sp:0.75,gim:'truant',desc:'게으름: 3초 걷고 3초 쉬어요. 대신 체력이 아주 많아요.',badge:'밸런스배지',bd:'소환 비용 -10%',ap:m=>{m.costMult*=0.9;},col:'#c9b48a'},
+ {lead:'은송',n:'파비코리',id:334,t:['드래곤','비행'],hp:27,sp:0.7,gim:'tailwind',desc:'순풍: 8초마다 4초 동안 필드의 모든 적이 1.5배 빨라져요.',badge:'페더배지',bd:'사거리 +10%',ap:m=>{m.rangeAll+=0.1;},col:'#9fd0f5'},
+ {lead:'풍&란',n:'솔록',id:338,t:['에스퍼','바위'],hp:30,sp:0.6,gim:'teleport',desc:'순간이동: 7초마다 길 위 다른 곳으로 이동. 체력 절반 아래에서 받는 피해 30% 감소.',badge:'마인드배지',bd:'치명타 확률 +8%',ap:m=>{m.crit+=0.08;},col:'#f76693'},
+ {lead:'아단',n:'밀로틱',id:350,t:['물'],hp:34,sp:0.6,gim:'recover',desc:'자기재생: 8초마다 체력 15% 회복.',badge:'레인배지',bd:'호연 정복',ap:()=>{},col:'#5b8fd6'},
+];
+const HOENN_ENEMY={'노말':[['지그제구리',263],['소곤룡',293],['에나비',300]],'불꽃':[['둔타',322],['불꽃숭이',390]],'물':[['연꽃몬',270],['샤프니아',318],['고래왕자',320],['가재군',341]],'전기':[['썬더라이',309]],'풀':[['도토링',273],['버섯꼬',285]],'얼음':[['눈꼬마',361],['대굴레오',363]],'격투':[['마크탕',296],['요가랑',307]],'독':[['아보',23],['스컹뿡',434]],'땅':[['톱치',328],['둔타',322],['미꾸리',339]],'비행':[['갈모매',278],['파비코',333]],'에스퍼':[['오뚝군',343],['요가랑',307]],'벌레':[['개무소',265]],'바위':[['코코파스',299]],'고스트':[['해골몽',355],['어둠대신',353]],'드래곤':[['미끄메라',704],['파비코',333]],'악':[['깜까미',302],['포챠나',261],['앱솔',359]],'강철':[['기어르',599]],'페어리':[['마릴',183]]};
+const HOENN_THEMES=[
+ {n:'바위 체육관',ground:'rock',g:['#b5a688','#a8997b','#cdbfa2','#857559'],border:'rocks',path:'dirt',p:['#cdb07e','#b99c6b','#e0c695','#8c714a'],tall:false,plat:{rim:'#efe3c8',top:'#b19f80',side:'#74654c',tex:'#968569',kind:'rock'}},
+ {n:'파도 동굴',ground:'swamp',g:['#5f7d8c','#55727f','#7c99a6','#3c5562'],border:'rocks',path:'stone',p:['#b9b2a2','#a9a292','#cdc7b8','#7a7466'],tall:false,plat:{rim:'#dfe8ec',top:'#7f98a4',side:'#46606c',tex:'#98afba',kind:'stone'}},
+ {n:'발전 체육관',ground:'metal',g:['#a2a9b8','#959cab','#bcc3d0','#6f7685'],border:'wall',path:'catwalk',p:['#e0c25a','#cdb04c','#f0da8a','#3a3426'],tall:false,plat:{rim:'#e6ebf0',top:'#b7c0ca',side:'#717b86',tex:'#97a1ac',kind:'metal'}},
+ {n:'용암 온천',ground:'volcano',g:['#82584a','#744c3f','#966a59','#55362c'],border:'rocks',path:'ash',p:['#ab947f','#9d8672','#bfa893','#6c5747'],tall:false,plat:{rim:'#e2cfc2',top:'#8a6a5c',side:'#523a30',tex:'#7a5a4c',kind:'rock'}},
+ {n:'도장 마루',ground:'wood',g:['#c49a68','#b58c5c','#d8b384','#87653f'],border:'wall',path:'carpet',p:['#4f7ac9','#4369b4','#7aa0e0','#26407a'],tall:false,plat:{rim:'#f3e3c8',top:'#c49a6c',side:'#7d5a36',tex:'#a97d51',kind:'stone'}},
+ {n:'나무 위 하늘길',ground:'grass',g:['#7fc06a','#72b35e','#a2d88d','#55974a'],border:'trees',path:'bridge',p:['#c3925a','#a87a46','#dcae76','#6e4a26'],tall:true,flowers:true,plat:{rim:'#e8f4d4',top:'#88c96a',side:'#4f8a3a',tex:'#a3da84',kind:'grass'}},
+ {n:'별의 체육관',ground:'gym',g:['#c9b7e0','#bcaad4','#ddd0ee','#9483b0'],border:'wall',path:'arrows',p:['#6a5acd','#5a4bbb','#9183e0','#352a7a'],tall:false,warp:true,plat:{rim:'#ffe3f0',top:'#c9a3e0',side:'#7a5598',tex:'#e0c3f0',kind:'warp'}},
+ {n:'물의 체육관',ground:'ice',g:['#bfe0f0','#b0d4e8','#dcf0fa','#7fa8c0'],border:'rocks',path:'stone',p:['#f2f6f8','#e4ebef','#ffffff','#a9bac4'],tall:false,plat:{rim:'#ffffff',top:'#bfe0ee',side:'#7aa2b8',tex:'#e4f3fa',kind:'stone'}},
+];
+// 챔피언로드: 사천왕 넷과 챔피언
+const CHAMP_GYMS=[
+ {lead:'칸나',n:'라프라스',id:131,t:['얼음','물'],hp:11,sp:0.55,gim:'hail',desc:'싸라기눈: 9초마다 3초 동안 얼음 타입이 아닌 포켓몬의 공격 속도가 40% 느려져요.',badge:'칸나의 인정',bd:'모든 포켓몬 공격 +10%',ap:m=>{m.dmgAll+=0.1;},col:'#9fdedb'},
+ {lead:'시바',n:'괴력몬',id:68,t:['격투'],hp:17,sp:0.6,gim:'bulk',desc:'벌크업: 8초마다 받는 피해가 15%씩 줄어요(3번까지).',badge:'시바의 인정',bd:'관장 피해 +20%',ap:m=>{m.bossDmg+=0.2;},col:'#d4473f'},
+ {lead:'국화',n:'팬텀',id:94,t:['고스트','독'],hp:25,sp:0.6,gim:'hypnosis',desc:'최면술: 7초마다 가까운 포켓몬 2마리를 3초 재워요.',badge:'국화의 인정',bd:'치명타 확률 +8%',ap:m=>{m.crit+=0.08;},col:'#8b72ad'},
+ {lead:'목호',n:'망나뇽',id:149,t:['드래곤','비행'],hp:34,sp:0.6,gim:'ddance',desc:'용의춤: 10초마다 빨라지고 받는 피해가 15%씩 줄어요(3번까지).',badge:'목호의 인정',bd:'필드 적 제한 +10',ap:m=>{m.cap+=10;},col:'#8256f7'},
+ {lead:'그린',n:'리자몽',id:6,t:['불꽃','비행'],hp:52,sp:0.55,gim:'final',desc:'효과가 굉장한 공격이 아니면 피해 40% 감소. 체력 절반 아래에서 초당 1.5% 회복.',badge:'챔피언',bd:'챔피언로드 돌파',ap:()=>{},col:'#f2c14e'},
+];
+CHAMP_GYMS.forEach((g,k)=>{g.title=k<4?`사천왕 ${g.lead}`:`챔피언 ${g.lead}`;});
+const CHAMP_THEMES=[JOHTO_THEMES[6],KANTO_THEMES[6],KANTO_THEMES[4],JOHTO_THEMES[7],JOHTO_THEMES[2]].map((t,k)=>Object.assign({},t,{n:['칸나의 방','시바의 방','국화의 방','목호의 방','챔피언의 방'][k]}));
 // 판 모양: 칸 좌표(0..COLS, 0..ROWS) 위의 닫힌 길. o는 판 바깥 여백(칸 단위)으로 layout에서 정해진다.
+// 지방마다 길 모양이 2~3가지 있고, 관장을 하나 이길 때마다 다음 모양으로 바뀐다.
 const RECT_PATH=(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[-o,R+o]];
+const V=(path,closed,n)=>({path,closed,n});
 const REGIONS=[
- {id:'kanto',n:'관동',sub:'관동 체육관 8곳, 40웨이브 · ㄱ자로 꺾인 길',gyms:KANTO_GYMS,themes:KANTO_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,
-  // 오른쪽 위를 크게 도는 고리에 가운데 세로 길: 어느 칸이든 길에서 두 칸 안쪽
-  path:(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[2.5,R+o],[2.5,2.5],[-o,2.5]],closed:[10,11,12,17,22,27,32,37],hpMul:1,
+ {id:'kanto',n:'관동',sub:'관동 체육관 8곳, 40웨이브 · 관장마다 바뀌는 길',gyms:KANTO_GYMS,themes:KANTO_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,hpMul:1.07,
+  variants:[
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[2.5,R+o],[2.5,2.5],[-o,2.5]],[10,11,12,17,22,27,32,37],'ㄱ자 길'),
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,2.5],[2.5,2.5],[2.5,R+o],[-o,R+o]],[12,13,14,17,22,27,32,37],'거꾸로 ㄱ자 길'),
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,5.5],[1.5,5.5],[1.5,R+o],[-o,R+o]],[26,27,28,29,31,36],'아래로 꺾인 길')],
   rule:null,win:'여덟 체육관을 모두 돌파했어요. 그린배지까지 손에 넣었어요.',winTitle:'관동 정복',face:[6,25,150]},
- {id:'johto',n:'성도',sub:'성도 체육관 8곳, 40웨이브 · 아래가 ㄷ자로 깊게 파인 길',gyms:JOHTO_GYMS,themes:JOHTO_THEMES,enemy:JOHTO_ENEMY,cols:5,rows:8,hpMul:1.12,
-  // ㄷ자로 깊게 파인 아래쪽 길: 안쪽 세로 세 칸은 세 방향이 길이라 명당
-  path:(o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,4.5],[1.5,4.5],[1.5,R+o],[-o,R+o]],closed:[21,22,23,26,28,31,33,36,38],
+ {id:'johto',n:'성도',sub:'성도 체육관 8곳, 40웨이브 · 낮과 밤',gyms:JOHTO_GYMS,themes:JOHTO_THEMES,enemy:JOHTO_ENEMY,cols:5,rows:8,hpMul:1.22,
+  variants:[
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,4.5],[1.5,4.5],[1.5,R+o],[-o,R+o]],[21,22,23,26,28,31,33,36,38],'아래가 파인 ㄷ자 길'),
+   V((o,C,R)=>[[-o,-o],[1.5,-o],[1.5,3.5],[3.5,3.5],[3.5,-o],[C+o,-o],[C+o,R+o],[-o,R+o]],[1,6,11,16,17,18,3,8,13],'위가 파인 ㄷ자 길'),
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,2.5],[1.5,2.5],[1.5,5.5],[C+o,5.5],[C+o,R+o],[-o,R+o]],[11,12,13,14,16,21,26,27,28,29],'옆이 파인 ㄷ자 길')],
   rule:'daynight',ruleDesc:'5웨이브마다 낮과 밤이 바뀌어요. 밤에는 고스트·악 포켓몬 공격 +30%, 고스트·악 적이 자주 나와요.',
   win:'여덟 체육관을 모두 돌파했어요. 라이징배지까지 손에 넣었어요.',winTitle:'성도 정복',face:[157,160,154],lock:'관동을 정복하면 열려요.'},
- {id:'hoenn',n:'호연',sub:'날씨가 바뀌는 지방',soon:true,face:[254,257,260],lock:'준비 중이에요.'},
+ {id:'hoenn',n:'호연',sub:'호연 체육관 8곳, 40웨이브 · 날씨와 지그재그 길',gyms:HOENN_GYMS,themes:HOENN_THEMES,enemy:HOENN_ENEMY,cols:5,rows:8,hpMul:1.14,
+  variants:[
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,R+o],[3.5,R+o],[3.5,5.5],[1.5,5.5],[1.5,2.5],[-o,2.5]],[10,11,16,21,26,27,28,33,38],'지그재그 길'),
+   V((o,C,R)=>[[-o,-o],[C+o,-o],[C+o,2.5],[3.5,2.5],[3.5,5.5],[1.5,5.5],[1.5,R+o],[-o,R+o]],[13,14,18,23,28,26,27,31,36],'거꾸로 지그재그 길')],
+  rule:'weather',ruleDesc:'5웨이브마다 날씨가 바뀌어요. 쾌청은 불꽃, 비는 물, 모래바람은 바위·땅·강철, 싸라기눈은 얼음 포켓몬이 세져요.',
+  win:'여덟 체육관을 모두 돌파했어요. 레인배지까지 손에 넣었어요.',winTitle:'호연 정복',face:[254,257,260],lock:'성도를 정복하면 열려요.'},
+ {id:'champ',n:'챔피언로드',sub:'사천왕 넷과 챔피언, 25웨이브 · 8자로 엇갈리는 길',gyms:CHAMP_GYMS,themes:CHAMP_THEMES,enemy:KANTO_ENEMY,cols:5,rows:8,hpMul:1.45,maxw:25,
+  variants:[V((o,C,R)=>[[2.5,-o],[C+o,-o],[C+o,3.5],[-o,3.5],[-o,R+o],[2.5,R+o]],[2,7,12,15,16,17,18,19,22,27,32,37],'8자 길')],
+  rule:null,ruleDesc:'5웨이브마다 사천왕이 나오고, 25웨이브에서 챔피언과 싸워요. 적이 처음부터 강해요.',
+  win:'사천왕과 챔피언을 모두 이겼어요. 이제 당신이 챔피언이에요.',winTitle:'챔피언',face:[131,149,6],lock:'관동을 정복하면 열려요.'},
 ];
-let REGION=REGIONS[0],GYMS=KANTO_GYMS,THEMES=KANTO_THEMES,ENEMY=KANTO_ENEMY,OPEN=[];
+let REGION=REGIONS[0],GYMS=KANTO_GYMS,THEMES=KANTO_THEMES,ENEMY=KANTO_ENEMY,OPEN=[],VAR=0;
 function setRegion(R){
-  REGION=R;GYMS=R.gyms;THEMES=R.themes;ENEMY=R.enemy;COLS=R.cols;ROWS=R.rows;N=COLS*ROWS;
-  OPEN=Array.from({length:N},(_,i)=>!R.closed.includes(i));
+  REGION=R;GYMS=R.gyms;THEMES=R.themes;ENEMY=R.enemy;COLS=R.cols;ROWS=R.rows;N=COLS*ROWS;MAXW=R.maxw||40;
+  setVariant(0);
 }
+// 길 모양 바꾸기(관장 구간마다)
+function setVariant(k){const R=REGION,v=R.variants[k%R.variants.length];VAR=k%R.variants.length;R.path=v.path;R.closed=v.closed;
+  OPEN=Array.from({length:N},(_,i)=>!v.closed.includes(i));}
+const variantFor=w=>Math.floor(((w||1)-1)/5)%REGION.variants.length;
 const isOpen=i=>i>=0&&i<N&&OPEN[i];
 // 밤: 6~10, 16~20, 26~30, 36~40웨이브
 const isNight=w=>REGION.rule==='daynight'&&Math.floor(((w||1)-1)/5)%2===1;
+// 호연 날씨
+const WEATHER={sun:{n:'쾌청',d:'불꽃 포켓몬 공격 +40%, 물 포켓몬 공격 -25%',up:['불꽃'],down:['물']},rain:{n:'비',d:'물 포켓몬 공격 +40%, 불꽃 포켓몬 공격 -25%',up:['물'],down:['불꽃']},
+ sand:{n:'모래바람',d:'바위·땅·강철 포켓몬 공격 +35%',up:['바위','땅','강철'],down:[]},hail:{n:'싸라기눈',d:'얼음 포켓몬 공격 +40%, 모든 적 속도 -10%',up:['얼음'],down:[]}};
+const weatherAt=w=>REGION.rule==='weather'?['sun','rain','sand','hail'][Math.floor(((w||1)-1)/5)%4]:null;
 setRegion(REGIONS[0]);

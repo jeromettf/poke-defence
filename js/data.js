@@ -69,6 +69,7 @@ const MECH={
  rocks:'스텔스록: 맞힌 자리에 3초 동안 바위가 깔려 지나가는 적마다 한 번씩 피해를 줘요(한 번에 두 군데까지).',
  shock:'전기 충격: 25%(단계마다 +5%) 확률로 1초 마비. 마비된 적은 받는 피해 +30%.',
  nocturnal:'야행성: 밤에는 공격 2배, 낮에는 사거리 +1칸과 공격 속도 +20%.',
+ speedboost:'가속: 웨이브 동안 공격할 때마다 공격 속도가 3%씩 올라요(최대 +90%). 웨이브가 바뀌면 처음부터.',
 };
 const LINES=[
  {n:['캐이시','윤겔라','후딘'],id:[63,64,65],t:['에스퍼'],role:'D',mech:'snipe',dmg:24,rate:0.45,range:4.2},
@@ -116,6 +117,10 @@ const LINES=[
  {n:['애버라스','데기라스','마기라스'],id:[246,247,248],t:['바위','악'],role:'A',mech:'rocks',dmg:9,rate:0.6,range:2.3,rg:'johto'},
  {n:['에레키드','에레브','에레키블'],id:[239,125,466],t:['전기'],role:'C',mech:'shock',dmg:7,rate:1.1,range:2.1,rg:'johto'},
  {n:['부우부','야부엉','야부엉'],id:[163,164,164],t:['노말','비행'],role:'C',mech:'nocturnal',dmg:10,rate:0.8,range:2.6,rg:'johto'},
+ // 호연
+ {n:['나무지기','나무돌이','나무킹'],id:[252,253,254],t:['풀'],role:'D',mech:'crit',dmg:9,rate:1.0,range:2.3,rg:'hoenn'},
+ {n:['아차모','영치코','번치코'],id:[255,256,257],t:['불꽃','격투'],role:'D',mech:'speedboost',dmg:9,rate:0.8,range:2.0,rg:'hoenn'},
+ {n:['물짱이','늪짱이','대짱이'],id:[258,259,260],t:['물','땅'],role:'A',mech:'quake',dmg:9,rate:0.5,range:2.0,rg:'hoenn'},
 ];
 const LIDX=n=>LINES.findIndex(L=>L.n[0]===n);
 const TRAINERS=[
@@ -131,8 +136,11 @@ const TRAINERS=[
  {n:'실버',desc:'강해지는 것만이 목적: 3단계 포켓몬 공격 +35%.',lines:['리아코','애버라스','고오스','스라크','미뇽'],ap:m=>{m.t3+=0.35;},need:'kanto'},
  {n:'유빈',desc:'천리안: 고스트 타입 공격 +30%, 고스트 시너지에 필요한 수 1 감소.',lines:['고오스','부우부','뜨아거','드라꼰','이브이'],ap:m=>{m.typeBonus['고스트']=0.3;m.synRedT['고스트']=1;},need:'johto4'},
  {n:'이향',desc:'용의 굴 수행: 드래곤·물 타입 공격 +20%, 관장 피해 +15%.',lines:['미뇽','잉어킹','리아코','아공이','딥상어동'],ap:m=>{m.typeBonus['드래곤']=0.2;m.typeBonus['물']=0.2;m.bossDmg+=0.15;},need:'johto'},
+ // 호연 트레이너
+ {n:'휘웅',desc:'아빠의 가르침: 시작할 때 몬스터볼 +2, 포획 성공 확률 +15%.',lines:['나무지기','아차모','물짱이','랄토스','아공이'],ap:(m,d,st)=>{st.balls+=2;m.catchB+=0.15;},need:'johto'},
+ {n:'봄이',desc:'콘테스트 스타: 날씨 효과 1.5배, 고유 스킬 확률 +15%.',lines:['아차모','물짱이','나무지기','메탕','빈티나'],ap:m=>{m.weather+=0.5;m.skill+=0.15;},need:'hoenn4'},
 ];
-const NEED_TXT={kanto:'관동을 정복하면 열려요',johto4:'성도 배지 4개를 모으면 열려요',johto:'성도를 정복하면 열려요'};
+const NEED_TXT={kanto:'관동을 정복하면 열려요',johto4:'성도 배지 4개를 모으면 열려요',johto:'성도를 정복하면 열려요',hoenn4:'호연 배지 4개를 모으면 열려요'};
 const EEVEE=[
  {n:'샤미드',id:134,t:['물'],mech:'splash',role:'A'},{n:'쥬피썬더',id:135,t:['전기'],mech:'chain',role:'A'},
  {n:'부스터',id:136,t:['불꽃'],mech:'burn',role:'A'},{n:'에브이',id:196,t:['에스퍼'],mech:'snipe',role:'D'},
@@ -152,7 +160,45 @@ const LEGENDS=[
  {n:'무한다이노',id:890,t:['독','드래곤'],mech:'zone',role:'A',dmg:90,rate:0.8,range:3,from:'독·벌레'},
  {n:'레지기가스',id:486,t:['노말'],mech:'slowstart',role:'D',dmg:90,rate:0.9,range:2.6,from:'노말'},
  {n:'세레비',id:251,t:['풀','에스퍼'],mech:'auraAll',role:'S',dmg:0,rate:1,range:0,from:'풀·페어리'},
+ // 특수 조합으로만 나오는 포켓몬(12번부터). pass: 필드에 있으면 판 전체에 붙는 효과
+ {n:'뮤',id:151,t:['에스퍼'],mech:'snipe',role:'D',dmg:380,rate:0.8,range:4.5,sp:true,pass:'mew',pd:'모든 포켓몬 공격 +15%'},
+ {n:'루기아',id:249,t:['에스퍼','비행'],mech:'rain',role:'A',dmg:75,rate:0.9,range:3.2,sp:true,pass:'lugia',pd:'모든 적 속도 -12%'},
+ {n:'디아루가',id:483,t:['강철','드래곤'],mech:'splash',role:'A',dmg:250,rate:1.0,range:3,sp:true,pass:'dialga',pd:'관장 제한 시간 +10초'},
+ {n:'지라치',id:385,t:['강철','에스퍼'],mech:'auraAll',role:'S',dmg:0,rate:1,range:0,sp:true,pass:'jirachi',pd:'웨이브가 시작될 때마다 코인 +25'},
+ {n:'다크라이',id:491,t:['악'],mech:'curse',role:'D',dmg:300,rate:0.9,range:3,sp:true,pass:'darkrai',pd:'잠든 적이 받는 피해 +50% → +100%'},
+ {n:'라티오스',id:381,t:['드래곤','에스퍼'],mech:'double',role:'D',dmg:170,rate:1.0,range:3.2,sp:true,pass:'latios',pd:'모든 포켓몬 치명타 확률 +10%'},
 ];
+// 특수 조합: 정해진 3단계 세 마리를 필드에 모으면 합칠 수 있다. 'eevee3'은 서로 다른 이브이 진화형 셋
+const COMBOS=[
+ {need:['리자몽','거북왕','이상해꽃'],to:12,hint:'관동 스타팅 셋'},
+ {need:['메가니움','블레이범','장크로다일'],to:13,hint:'성도 스타팅 셋'},
+ {need:['망나뇽','보만다','한카리아스'],to:14,hint:'드래곤 최종 진화 셋'},
+ {need:['eevee3'],to:15,hint:'서로 다른 이브이 진화형 셋'},
+ {need:['후딘','팬텀','괴력몬'],to:16,hint:'통신 교환으로 진화하는 셋'},
+ {need:['나무킹','번치코','대짱이'],to:17,hint:'호연 스타팅 셋'},
+];
+// 메가진화: 3단계 이름 → 메가 모습
+const MEGA={
+ '이상해꽃':{id:10033,n:'메가이상해꽃'},'리자몽':{id:10034,n:'메가리자몽X',t:['불꽃','드래곤']},'거북왕':{id:10036,n:'메가거북왕'},
+ '후딘':{id:10037,n:'메가후딘'},'팬텀':{id:10038,n:'메가팬텀'},'피죤투':{id:10073,n:'메가피죤투'},'갸라도스':{id:10041,n:'메가갸라도스',t:['물','악']},
+ '전룡':{id:10045,n:'메가전룡',t:['전기','드래곤']},'핫삼':{id:10046,n:'메가핫삼'},'마기라스':{id:10049,n:'메가마기라스'},'가디안':{id:10051,n:'메가가디안'},
+ '보스로라':{id:10053,n:'메가보스로라',t:['강철']},'보만다':{id:10089,n:'메가보만다'},'메타그로스':{id:10076,n:'메가메타그로스'},'한카리아스':{id:10058,n:'메가한카리아스'},
+ '루카리오':{id:10059,n:'메가루카리오'},'망나뇽':{id:10281,n:'메가망나뇽'},'메가니움':{id:10282,n:'메가메가니움',t:['풀','페어리']},'장크로다일':{id:10283,n:'메가장크로다일',t:['물','드래곤']},
+ '픽시':{id:10278,n:'메가픽시',t:['페어리','비행']},
+};
+// 지닌 물건
+const ITEMS={
+ scarf:{n:'구애스카프',d:'공격 속도 +40%',ic:'spd',r:'rare'},
+ orb:{n:'생명의구슬',d:'공격 +50%',ic:'atk',r:'rare'},
+ left:{n:'먹다남은음식',d:'고유 스킬 확률과 재사용 속도 +60%',ic:'skill',r:'rare'},
+ ribbon:{n:'팀 리본',d:'타입 시너지를 셀 때 2마리로 쳐요',ic:'type',r:'rare'},
+ scope:{n:'초점렌즈',d:'치명타 확률 +25%',ic:'atk',r:'common'},
+ wide:{n:'광각렌즈',d:'사거리 +0.8칸',ic:'rng',r:'common'},
+ amulet:{n:'부적금화',d:'이 포켓몬이 쓰러뜨리면 코인 +2',ic:'coin',r:'common'},
+ band:{n:'기합의머리띠',d:'관장과 야생 강적에게 주는 피해 +50%',ic:'atk',r:'common'},
+ stone:{n:'메가스톤',d:'메가진화할 수 있는 3단계에게 쥐여 주면 메가진화 버튼이 생겨요',ic:'mega',r:'epic'},
+};
+const ITEM_POOL=['scarf','orb','left','ribbon','scope','wide','amulet','band'];
 const LEG_BY_TYPE={'불꽃':0,'물':1,'전기':2,'에스퍼':3,'드래곤':4,'비행':4,'땅':5,'바위':5,'얼음':6,'격투':7,'강철':7,'고스트':8,'악':8,'독':9,'벌레':9,'노말':10,'풀':11,'페어리':11};
 const legendFor=u=>LEG_BY_TYPE[def(u).t[0]];
 const NATURES=[
@@ -162,13 +208,19 @@ const NATURES=[
  {n:'대담',d:'치명타 +15%',dmg:1,rate:1,range:1,crit:0.15},
  {n:'성실',d:'공격 +5%',dmg:1.05,rate:1,range:1,crit:0},
 ];
-let COLS=5,ROWS=8,N=COLS*ROWS;const MAXW=40;
+let COLS=5,ROWS=8,N=COLS*ROWS,MAXW=40;
 
 const TIERM=[0,1,2.6,7];
 const REFUND=[0,10,30,90,250];
 const MAXLV=15;
-const gymAt=w=>w%5===0?GYMS[w/5-1]:null;
-const hpAt=w=>REGION.hpMul*28*Math.pow(1.13,w-1)*(w>16?Math.pow(1.04,w-16):1)*(1+0.75*Math.min(1,(w-1)/12));
+// 관장: 지방의 체육관 순서대로. 끝없는 모드는 다시 처음부터 돌고, 레이드는 15웨이브 뒤로 매 웨이브가 전설 보스
+const EGYM={};
+function gymAt(w){
+  if(typeof state!=='undefined'&&state.mode==='raid'&&w>RAID_FROM)return raidGym(w-RAID_FROM);
+  if(w%5)return null;const k=w/5-1;if(k<GYMS.length)return GYMS[k];
+  if(typeof state!=='undefined'&&state.mode==='endless'){const key=REGION.id+k;if(!EGYM[key]){const g=GYMS[k%GYMS.length],lap=Math.floor(k/GYMS.length);EGYM[key]=Object.assign({},g,{hp:g.hp*(1+0.35*lap),badge:g.badge+' '+(lap+1)+'회차',bd:'배지 효과는 첫 회차에만 붙어요',ap:()=>{},lap});}return EGYM[key];}
+  return null;}
+const hpAt=w=>REGION.hpMul*(typeof state!=='undefined'&&state.hpMul||1)*28*Math.pow(1.13,w-1)*(w>16?Math.pow(1.04,w-16):1)*(1+0.75*Math.min(1,(w-1)/12));
 const countAt=w=>10+Math.floor(w*0.55);
 const MECH_BASE={};for(const L of LINES)if(!MECH_BASE[L.mech])MECH_BASE[L.mech]=L;
 

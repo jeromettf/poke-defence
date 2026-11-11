@@ -12,11 +12,46 @@ function sfx(k){if(!soundOn)return;try{if(!AC)AC=new (window.AudioContext||windo
   else if(k==='buy')tone(1200,0,.05,'square',.03);
 }catch(e){}}
 
+// ───────── 배경음악 ─────────
+// 지방마다 코드 진행과 템포가 다른 짧은 루프를 오실레이터로 만든다. 관장전은 단조로 빠르게.
+const MUS={on:store.get('pkrtd-bgm')==='1',song:'',next:0,bar:0,step:0,timer:null,g:null};
+const SONGS={
+ title:{bpm:96,root:60,minor:false,prog:[0,5,3,4],seed:3},
+ kanto:{bpm:120,root:60,minor:false,prog:[0,3,4,0,5,3,1,4],seed:11},
+ johto:{bpm:106,root:62,minor:false,prog:[0,5,3,4,0,2,3,4],seed:23},
+ hoenn:{bpm:128,root:57,minor:false,prog:[0,4,5,3,0,4,3,4],seed:37},
+ champ:{bpm:136,root:55,minor:true,prog:[0,5,3,4,0,5,6,4],seed:41},
+ night:{bpm:92,root:57,minor:true,prog:[0,5,3,6],seed:53},
+ boss:{bpm:152,root:57,minor:true,prog:[0,0,5,6,0,0,3,4],seed:71}};
+const SCALE={maj:[0,2,4,5,7,9,11],min:[0,2,3,5,7,8,10]};
+const mf=n=>440*Math.pow(2,(n-69)/12);
+function note(f,t,d,type,vol){const a=AC,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(vol,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(MUS.g);o.start(t);o.stop(t+d+0.03);}
+function songNow(){if(state.phase==='draft'||state.phase==='over')return 'title';if(state.boss&&!state.boss.dead)return 'boss';if(isNight(state.wave))return 'night';return REGION.id;}
+function music(){
+  if(!MUS.on){if(MUS.timer){clearInterval(MUS.timer);MUS.timer=null;}if(MUS.g)MUS.g.gain.value=0;return;}
+  try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();}catch(e){return;}
+  if(!MUS.g){MUS.g=AC.createGain();MUS.g.connect(AC.destination);}MUS.g.gain.value=0.55;
+  if(!MUS.timer){MUS.next=AC.currentTime+0.1;MUS.timer=setInterval(schedule,60);}
+}
+function schedule(){if(!MUS.on||!AC)return;const want=songNow();if(want!==MUS.song){MUS.song=want;MUS.bar=0;MUS.step=0;}
+  const S=SONGS[MUS.song]||SONGS.kanto,sc=S.minor?SCALE.min:SCALE.maj,spb=60/S.bpm/2;
+  while(MUS.next<AC.currentTime+0.25){
+    const deg=S.prog[MUS.bar%S.prog.length],st=MUS.step,t=MUS.next;
+    const tone=k=>{const d=deg+k,o=Math.floor(d/7);return S.root+sc[((d%7)+7)%7]+12*o;};
+    if(st%4===0)note(mf(tone(0)-24),t,spb*3.2,'triangle',0.09);
+    if(st%4===2)note(mf(tone(0)-12),t,spb*1.6,'triangle',0.05);
+    note(mf(tone([0,2,4,2,0,2,4,7][st])),t,spb*0.9,'square',0.012);
+    // 멜로디: 곡마다 고정된 씨앗으로 만든 마디 패턴이 여덟 마디마다 되풀이된다
+    let h=(S.seed*131+(MUS.bar%8)*17+st*7)%97;if(st%2===0&&h%3!==0){const k=[0,2,4,1,3,5,7,4][h%8];note(mf(tone(k)+12),t,spb*(h%5===0?1.8:0.95),'square',0.022);}
+    if(MUS.song==='boss'&&st%2===1)note(2000,t,0.03,'square',0.006);
+    MUS.next+=spb;MUS.step=(st+1)%8;if(MUS.step===0)MUS.bar++;}
+}
+
 // ───────── 입력 ─────────
 function cellAt(ev){const r=cv.getBoundingClientRect();const x=ev.clientX-r.left,y=toWY(ev.clientY-r.top);
   const c=Math.floor((x-G.bx)/G.cell),rr=Math.floor((y-G.by)/G.cell);if(c<0||rr<0||c>=COLS||rr>=ROWS)return -1;const i=rr*COLS+c;return OPEN[i]?i:-1;}
 const canEdit=()=>state.phase==='play';
-cv.addEventListener('pointerdown',ev=>{hideTip();if(!canEdit())return;const i=cellAt(ev);const r=cv.getBoundingClientRect();
+cv.addEventListener('pointerdown',ev=>{hideTip();if(state.paused&&state.phase==='play'&&$('oak').hidden&&$('layer').hidden){state.paused=false;syncPause();return;}if(!canEdit())return;const i=cellAt(ev);const r=cv.getBoundingClientRect();
   down={i,x:ev.clientX,y:ev.clientY,moved:false};
   if(i>=0&&board[i]){drag={from:i,x:ev.clientX-r.left,y:ev.clientY-r.top};try{cv.setPointerCapture(ev.pointerId);}catch(e){}}});
 cv.addEventListener('pointermove',ev=>{if(!down||!drag)return;const r=cv.getBoundingClientRect();drag.x=ev.clientX-r.left;drag.y=ev.clientY-r.top;
@@ -36,12 +71,14 @@ function tap(i){
 $('summon').onclick=summon;
 $('speed').onclick=()=>{state.speed=state.speed>=3?1:state.speed+1;$('speed').textContent=state.speed+'×';};
 $('menuBtn').onclick=showMenu;
-$('info').onclick=()=>{state.info=!state.info;$('info').setAttribute('aria-pressed',state.info);};
-$('pause').onclick=()=>{if(state.phase!=='play')return;state.paused=!state.paused;syncPause();};
+$('catch').onclick=throwBall;
+$('luck').onclick=()=>{if(!$('tip').hidden&&$('tip').querySelector('h4')&&$('tip').querySelector('h4').textContent==='운 뽑기')return hideTip();showLuck();};
+$('intro').onclick=()=>{introT=0;nextIntro();};
+document.addEventListener('pointerdown',()=>{if(MUS.on&&!MUS.timer)music();},{passive:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.phase==='play'&&!state.paused){state.paused=true;syncPause();}});
 window.addEventListener('resize',layout);
 document.addEventListener('keydown',ev=>{if(!$('modal').hidden||!$('layer').hidden)return;
-  if(ev.key===' '){ev.preventDefault();summon();}else if(ev.key==='p'||ev.key==='P')$('pause').click();});
+  if(ev.key===' '){ev.preventDefault();summon();}else if((ev.key==='p'||ev.key==='P')&&state.phase==='play'){state.paused=!state.paused;syncPause();}else if(ev.key==='c'||ev.key==='C')throwBall();});
 
 // ───────── 루프 ─────────
 let last=0;
@@ -54,6 +91,7 @@ function frame(ts){
   shake*=Math.pow(0.02,dt);
   if(recalcSoon){recalcSoon=false;recalc();}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').dataset.off='';}
+  tickIntro(dt);
   {const sp=(state.phase==='play'&&!state.paused&&!state.cut)?state.speed:1;updParts(dt*sp);if(callout){callout.t-=dt;if(callout.t<=0)callout=null;}if(bumpT>0)bumpT-=dt;if(state.banner){state.banner.t-=dt;if(state.banner.t<=0)state.banner=null;}}
   for(let bi=0;bi<N;bi++){const u=board[bi];if(u&&u.ball){u.ball.t-=dt;if(u.ball.t<=0){u.ball=null;u.born=0.3;const c=cellCenter(bi);fx.push({k:'flash',x:c.x,y:c.y,r:G.cell*0.35,col:'#ffffff',t:.25,T:.25});fx.push({k:'ring',x:c.x,y:c.y+G.cell*0.18,r:G.cell*0.5,col:'#ffffff',t:.35,T:.35});burst(c.x,c.y,'페어리',8,0.9);}}}
   for(const u of board)if(u){if(u.cast>0)u.cast-=dt;if(u.born>0)u.born-=dt;if(u.pop>0)u.pop-=dt;if(u.lunge>0)u.lunge-=dt*(state.speed||1);if(u.evo){u.evo.t-=dt;if(u.evo.t<=0){u.evo=null;const bi=board.indexOf(u),c=cellCenter(bi);burst(c.x,c.y-G.cell*0.2,'페어리',14,1.3);fx.push({k:'flash',x:c.x,y:c.y-G.cell*0.2,r:G.cell*0.4,col:'#fff6c8',t:.3,T:.3});shake=Math.max(shake,u.tier===4?6:1.5);}}}

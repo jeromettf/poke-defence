@@ -70,6 +70,17 @@ const SKILL={
  '무한다이노':{n:'다이맥스포',k:'line',x:6,w:0.7,tox:5,d:'거대한 광선 평타 6배, 맹독 5중첩'},
  '레지기가스':{n:'크러시그립',k:'big',x:7,d:'평타 7배, 슬로스타트 단계가 높을수록 강함'},
  '세레비':{n:'시간여행',k:'buff',b:'all',v:1,d:'주변 아군 공격력·공격 속도 2배, 4초'},
+ // 호연
+ '나무킹':{n:'리프스톰',k:'line',x:5,w:0.45,d:'일직선 잎 폭풍 평타 5배'},
+ '번치코':{n:'블레이즈킥',k:'big',x:6,burn:true,crit:true,d:'평타 6배 확정 치명타, 화상'},
+ '대짱이':{n:'탁류',k:'nova',x:3,r:1.6,at:'self',slow:0.4,d:'주변 전체 평타 3배, 2초 동안 40% 감속'},
+ // 특수 조합
+ '뮤':{n:'원시의힘',k:'multi',x:4,cnt:5,sort:'hp',d:'체력이 많은 적 5마리를 평타 4배로 공격'},
+ '루기아':{n:'에어로블라스트',k:'line',x:7,w:0.7,crit:true,d:'굵은 바람 광선 평타 7배, 확정 치명타'},
+ '디아루가':{n:'시간의포효',k:'nova',x:5,r:3,at:'self',stun:1.2,d:'사거리 안 전체 평타 5배, 1.2초 기절'},
+ '지라치':{n:'파멸의소원',k:'buff',b:'all',v:1,d:'주변 아군 공격력·공격 속도 2배, 4초'},
+ '다크라이':{n:'다크홀',cd:6,k:'nova',x:1,r:3,at:'self',sleep:3,d:'사거리 안 적을 3초 재워요. 잠든 적은 받는 피해 +50%'},
+ '라티오스':{n:'라스트퍼지',k:'big',x:9,splash:1.2,d:'평타 9배, 주변에도 절반 피해'},
 };
 function skillOf(u){if(!u)return null;const d=def(u);if(u.tier<4&&LINES[u.line].mech==='ditto')return SKILL['메타몽'];if(u.tier<2){return LINES[u.line].mech==='gyara'?SKILL['잉어킹']:null;}
   if(d.mech==='gyara')return SKILL[u.tier>=2?'갸라도스':'잉어킹'];
