@@ -418,7 +418,7 @@ function hud(){
   if(!state.waveTypes)return;
   $('wave').innerHTML=`<small>${state.mode==='raid'&&state.wave>RAID_FROM?'레이드':'웨이브'}</small><b>${state.mode==='raid'&&state.wave>RAID_FROM?state.wave-RAID_FROM:state.wave}<span style="font-size:14px;color:#a9b8e0">/${MAXW>=999?'∞':MAXW}</span></b>`;
   {const nb=(state.balls||0)+(state.master||0),cc=catchable().length;$('catch').hidden=!featOn('catch');$('luck').hidden=!featOn('luck');$('catch').classList.toggle('ready',nb>0&&cc>0&&state.phase==='play');$('ballN').textContent=state.master?`${state.balls||0}+${state.master}`:(state.balls||0);}
-  {const e=$('early');if(featOn('early')&&canEarly()){e.hidden=false;e.innerHTML=`일찍<b>+${earlyBonus()}</b>`;}else e.hidden=true;}
+  {const e=$('early');if(featOn('early')&&canEarly()){const was=e.hidden;e.hidden=false;e.innerHTML=`일찍<b>+${earlyBonus()}</b>`;if(was)placeEarly();}else e.hidden=true;}
   {const wb=$('wildBtn'),on=state.wild&&!state.wild.dead;wb.hidden=!featOn('wild')||!(state.phase==='play'&&(canWild()||on));
    const k=on?'on'+state.wild.sid+Math.ceil(state.wild.wT):'off';if(wb.dataset.k!==k){wb.dataset.k=k;wb.classList.toggle('on',!!on);wb.innerHTML=on?`<span class="face">${sprTag(state.wild.sid)}</span><b>${Math.ceil(state.wild.wT)}</b>`:'<span class="wic">!</span><small>야생</small>';}}
   {const mc=$('mchip');mc.hidden=!featOn('missions')||!state.missions;if(!mc.hidden){const ms=state.missions.filter(m=>!m.done);const best=ms.length?Math.max(...ms.map(m=>Math.min(1,misVal(m)/misDef(m).goal))):1;
@@ -448,7 +448,7 @@ function hud(){
     en.hidden=false;en.className='entry'+(bad?' bad':'');en.dataset.w=nw;en.dataset.weak=weak;
     en.innerHTML=`<span class="el">${bad?'불리':'다음'}</span>${g?`<span class="gymchip-face" style="width:24px;height:24px;border-radius:50%;background:#fff;display:inline-block">${sprTag(g.id)}</span>`:''}${ty.map(ti).join('')}${isNight(nw)?'<span class="nt">밤</span>':''}${wm?`<span class="nt" style="background:${wm.col};color:#14110b">${wm.n}</span>`:''}`;
     const [px,py]=G.pts[0];en.style.left=Math.max(6,px-G.lw*0.5)+'px';en.style.top=(toSY(py)-G.lw*0.45)+'px';
-    const ea=$('early');ea.style.left=Math.max(6,px-G.lw*0.5)+'px';ea.style.top=(toSY(py)+G.lw*0.7)+'px';}
+    placeEarly();}
   else en.hidden=true;
   const nx=nextGym(),gl=$('pgym');
   if(nx&&state.phase!=='draft'){gl.hidden=false;gl.innerHTML=`${sprTag(nx.g.id)}<b>${nx.w-w<=0?'지금':nx.w-w}</b>`;}
@@ -458,6 +458,11 @@ $('entry').addEventListener('click',()=>{const en=$('entry'),ww=+en.dataset.w,t=
   toast(`${ww}웨이브: ${g?`관장 ${g.lead}의 ${g.n}(${g.t.join('·')})`:t.join('·')+' 타입'}${wm?' · '+wm.n:''}${isNight(ww)?' · 밤':''}${weak?`. 내 공격 포켓몬 중 ${weak}마리의 공격이 잘 안 들어가요.`:'.'}`,2.6);});
 $('prog').addEventListener('click',()=>{const nx=nextGym();if(!nx)return;const g=nx.g;toast(`${nx.w}웨이브 ${g.raid?'전설 레이드 '+g.n:g.lead+'의 '+g.n}(${g.t.join('·')}): ${g.desc}${g.raid?'':` 이기면 ${g.badge}(${g.bd}).`}`,3.4);});
 $('early').addEventListener('click',callEarly);
+function placeEarly(){const en=$('entry'),ea=$('early');if(en.hidden||ea.hidden)return;
+  const L=en.offsetLeft,T=en.offsetTop,w=en.offsetWidth,ew=ea.offsetWidth||64;
+  const eh=ea.offsetHeight||24,h=en.offsetHeight;
+  // .entry는 translate(-8px,-100%)로 그려지므로 보이는 위치는 (L-8, T-h)
+  if(L+w+6+ew<=G.W-6){ea.style.left=(L+w+6)+'px';ea.style.top=(T-h+(h-eh)/2)+'px';}else{ea.style.left=L+'px';ea.style.top=(T+G.lw*0.7)+'px';}}
 $('wildBtn').addEventListener('click',()=>{if(state.wild&&!state.wild.dead)return toast(`야생 ${state.wild.name}: ${Math.ceil(state.wild.wT)}초 안에 쓰러뜨려요. 체력이 25% 아래면 잡을 수도 있어요.`,2.2);callWild();});
 $('mchip').addEventListener('click',showMissions);
 // 포켓몬을 누르면 둘레에 정보·팔기·합체

@@ -133,8 +133,8 @@ function drawFx(f){
       ctx.globalAlpha=a*0.12;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,7);ctx.fill();break;}
     case 'punch':star(f.x,f.y,f.r*(0.7+0.6*p),6,f.col);star(f.x,f.y,f.r*0.4,6,'#ffffff');break;
     case 'txt':{ctx.save();upright(f.x,f.y);ctx.fillStyle=f.col;ctx.strokeStyle='#0b1226';ctx.lineWidth=4;ctx.lineJoin='round';ctx.font=`400 ${Math.round(G.cell*(f.big?0.3:0.22)*(p<0.12?1.4-p/0.12*0.4:1))}px 'Black Han Sans',sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.strokeText(f.s,f.x,f.y-p*G.cell*0.35);ctx.fillText(f.s,f.x,f.y-p*G.cell*0.35);ctx.restore();break;}
-    case 'num':{const pop=p<0.15?1+(0.15-p)/0.15*0.6:1,fs=Math.round(G.cell*(f.big?0.36:0.25)*pop);ctx.save();upright(f.x,f.y);ctx.font=`400 ${fs}px 'Black Han Sans',sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-      const yy=f.y-p*G.cell*0.45;ctx.lineWidth=Math.max(3,fs*0.24);ctx.strokeStyle='#0b1226';ctx.lineJoin='round';ctx.strokeText(f.s,f.x,yy);ctx.fillStyle=f.col;ctx.fillText(f.s,f.x,yy);ctx.restore();break;}
+    case 'num':{const pop=p<0.15?1+(0.15-p)/0.15*0.6:1,fs=Math.round(G.cell*(f.big?0.36:f.minor?0.2:0.26)*pop);ctx.save();if(f.minor)ctx.globalAlpha*=0.72;upright(f.x,f.y);ctx.font=`400 ${fs}px 'Black Han Sans',sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      const yy=f.y-p*G.cell*0.45;ctx.lineWidth=Math.max(f.minor?2:3,fs*0.24);ctx.strokeStyle='#0b1226';ctx.lineJoin='round';ctx.strokeText(f.s,f.x,yy);ctx.fillStyle=f.col;ctx.fillText(f.s,f.x,yy);ctx.restore();break;}
     case 'flash':ctx.globalCompositeOperation='lighter';ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(f.x,f.y,f.r*(0.6+p*0.8),0,7);ctx.fill();ctx.fillStyle=f.col;ctx.beginPath();ctx.arc(f.x,f.y,f.r*(1+p*0.9),0,7);ctx.globalAlpha=a*0.5;ctx.fill();ctx.globalCompositeOperation='source-over';break;
     case 'die':ctx.globalAlpha=1;drawAni(f.sid,f.x,f.y,f.size*(1-p*0.6),f.flip,a,{c:'#ffffff',a:Math.min(1,0.4+p)},0,1+p*0.4,1-p*0.5);break;
     case 'skbeam':{const T2=f.T-(f.delay||0),lt=f.t;if(lt>T2)break;const q=lt/T2,w=f.w*(0.4+0.6*q);ctx.globalAlpha=Math.min(1,q*1.6);ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
@@ -225,7 +225,7 @@ function flushPop(e){if(!(e.dAcc>0))return;let n=0;for(const f of fx)if(f.k==='n
   const sp=state.speed||1;
   // 배속이 높을수록 숫자를 덜 띄운다: 동시에 뜨는 개수를 줄이고, 체력의 2%도 안 되는 작은 피해는 3배속에서 생략
   if(n<36/sp&&!(sp>=3&&!e.dCrit&&e.dAcc<e.max*0.02&&!e.boss)){const col=e.dCrit?'#ffe14d':e.dEff===2?'#ffb347':e.dEff===0?'#b9c3c0':'#ffffff';
-    fx.push({k:'num',x:Math.min(G.W-G.cell*0.3,Math.max(G.cell*0.3,e.x+(Math.random()-.5)*G.cell*0.3)),y:Math.max(G.cell*0.55,e.y-G.cell*0.35),s:fmt(e.dAcc)+(e.dCrit?'!':''),col,big:e.dCrit||e.dAcc>e.max*0.4,t:.7,T:.7});}
+    fx.push({k:'num',x:Math.min(G.W-G.cell*0.3,Math.max(G.cell*0.3,e.x+(Math.random()-.5)*G.cell*0.3)),y:Math.max(G.cell*0.55,e.y-G.cell*0.35),s:fmt(e.dAcc)+(e.dCrit?'!':''),col,big:e.dCrit||e.dAcc>e.max*0.4,minor:!e.dCrit&&e.dEff!==2&&!(e.dAcc>e.max*0.4),t:.7,T:.7});}
   e.dAcc=0;e.dCrit=false;e.dEff=0;e.dT=0;}
 // 포획: 던진 볼이 포물선으로 날아가고, 잡힌 자리에서 세 번 흔들린다
 function drawCatch(){const cs=G.cell;
@@ -246,8 +246,9 @@ function drawBall(x,y,r,rot){
   ctx.beginPath();ctx.arc(-r*0.35,-r*0.5,r*0.18,0,7);ctx.fillStyle='rgba(255,255,255,.7)';ctx.fill();
   ctx.restore();
 }
-function drawCallout(){const c=callout,{W,H}=G,p=1-c.t/c.T,a=p<0.12?p/0.12:p>0.8?(1-p)/0.2:1,yy=G.oy+G.top+6-(1-Math.min(1,p/0.12))*10;
-  ctx.save();ctx.globalAlpha=a;ctx.font=`900 ${Math.round(W*0.046)}px 'IBM Plex Sans KR',sans-serif`;const tw=ctx.measureText(c.s).width,w=tw+W*0.08,h=W*0.085,x=(W-w)/2;
+function drawCallout(){const c=callout,{W,H}=G,p=1-c.t/c.T,a=p<0.12?p/0.12:p>0.8?(1-p)/0.2:1,sm=H<720,h=W*(sm?0.07:0.085),sb=$('summon'),floor=Math.min(H-(($('dockbar')||{}).offsetHeight||0),sb?sb.getBoundingClientRect().top-stage.getBoundingClientRect().top:H);
+  const yy=Math.min(toSY(G.oy+G.bh)-h*0.5,floor-h-(sm?2:4))+(1-Math.min(1,p/0.12))*10;
+  ctx.save();ctx.globalAlpha=a;ctx.font=`900 ${Math.round(W*(sm?0.04:0.046))}px 'IBM Plex Sans KR',sans-serif`;const tw=ctx.measureText(c.s).width,w=tw+W*0.08,x=(W-w)/2;
   ctx.beginPath();ctx.roundRect(x,yy,w,h,10);ctx.fillStyle='#fbf7ea';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#3d4a6b';ctx.stroke();ctx.fillStyle=c.col;ctx.fillRect(x+8,yy+h-6,w-16,2.5);
   ctx.fillStyle='#24303e';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.s,W/2,yy+h/2);ctx.restore();}
 function drawBanner(){

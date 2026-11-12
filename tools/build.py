@@ -9,6 +9,11 @@ loading='<div class="loading" id="loading"><div class="logo">포켓몬<br>랜덤
 v=lambda f:hashlib.md5(open(f'{R}/{f}','rb').read()).hexdigest()[:8]
 inner=f'{head}\n<link rel="stylesheet" href="css/game.css?v={v("css/game.css")}">\n\n{body}\n{loading}\n'+'\n'.join(f'<script src="js/{j}.js?v={v(f"js/{j}.js")}"></script>' for j in JS)+'\n'
 import re
-open(f'{R}/artifact.html','w').write(re.sub(r'\?v=[0-9a-f]{8}','',inner))  # 아티팩트는 주소 뒤 꼬리표 없이
+open(f'{R}/artifact.html','w').write(re.sub(r'\?v=[0-9a-f]{8}','',inner))  # 아티팩트는 구글 글꼴 링크도 남겨 둔다(직접 실은 글꼴이 막힐 때 대비)
+# 일반 웹페이지는 직접 실은 글꼴만 쓴다: 구글 글꼴 줄을 빼고 자주 쓰는 두 글꼴을 미리 받는다
+gf=[l for l in head.split('\n') if 'fonts.g' in l]
+pre='\n'.join(f'<link rel="preload" href="fonts/{n}.woff2" as="font" type="font/woff2" crossorigin>' for n in ['plex-400','bhs-400','plex-700'])
+for l in gf:inner=inner.replace(l+'\n','')
+inner=inner.replace('<link rel="stylesheet" href="css/game.css',pre+'\n<link rel="stylesheet" href="css/game.css',1)  # 아티팩트는 주소 뒤 꼬리표 없이
 open(f'{R}/index.html','w').write('<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'+inner.replace('\n\n<div class="app">','\n</head>\n<body>\n<div class="app">',1)+'</body>\n</html>\n')
 print('ok',len(inner))

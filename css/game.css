@@ -3,6 +3,12 @@
    - 테두리 대신 그림자와 간격으로 층을 나눈다. 굵은 선은 쓰지 않는다.
    - 글꼴은 두 가지: 제목·숫자 강조는 Black Han Sans, 나머지는 IBM Plex Sans KR(숫자는 고정폭 숫자).
    - 강조색은 역할별로 하나씩: 행동은 파랑, 돈은 금색, 위험은 빨강, 좋음은 초록. */
+ /* 글꼴은 게임에 나오는 글자만 담아 직접 싣는다(tools/build_fonts.py). 불러오기 화면이 글꼴까지 기다린 뒤 닫힌다(main.js) */
+@font-face{font-family:'Black Han Sans';font-weight:400;font-display:swap;src:url(../fonts/bhs-400.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans KR';font-weight:400;font-display:swap;src:url(../fonts/plex-400.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans KR';font-weight:500;font-display:swap;src:url(../fonts/plex-500.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans KR';font-weight:600;font-display:swap;src:url(../fonts/plex-600.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans KR';font-weight:700 900;font-display:swap;src:url(../fonts/plex-700.woff2) format('woff2')}
 :root{
   --dex:#d7392f; --dex-2:#bf2f26; --dex-3:#8f1f19; --dex-ink:#ffffff; --dex-soft:#ffd6d1;
   --ground:#f2eee5; --surface:#ffffff; --surface-2:#f7f4ed; --surface-3:#ece7dc;

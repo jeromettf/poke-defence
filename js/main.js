@@ -101,5 +101,7 @@ function frame(ts){
   requestAnimationFrame(frame);
 }
 readCols();layout();renderPanel();requestAnimationFrame(frame);
-loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}).then(r=>{const l=$('loading');if(l)l.remove();if(isNewUser())startTutorial();else showTitle();const bad=r.filter(x=>!x).length;if(bad)setTimeout(()=>toast(`그림 파일 ${bad}개를 불러오지 못했어요. 새로고침해 보세요.`,4),600);});
+// 글꼴도 불러오기 화면에서 기다린다(느려도 4초까지만). 글자가 뒤늦게 바뀌어 보이지 않게
+const fontsReady=()=>{try{return Promise.race([Promise.all(["400 16px 'Black Han Sans'","400 16px 'IBM Plex Sans KR'","700 16px 'IBM Plex Sans KR'"].map(f=>document.fonts.load(f))),new Promise(r=>setTimeout(r,4000))]).catch(()=>{});}catch(e){return Promise.resolve();}};
+Promise.all([loadSprites(f=>{const b=$('lbar');if(b)b.style.width=Math.round(f*100)+'%';}),fontsReady()]).then(([r])=>{const l=$('loading');if(l)l.remove();if(isNewUser())startTutorial();else showTitle();const bad=r.filter(x=>!x).length;if(bad)setTimeout(()=>toast(`그림 파일 ${bad}개를 불러오지 못했어요. 새로고침해 보세요.`,4),600);});
 if(window.ResizeObserver){const ro=new ResizeObserver(()=>layout());ro.observe(stage);ro.observe($('dockbar'));ro.observe($('hud'));}
