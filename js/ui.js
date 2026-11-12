@@ -9,7 +9,7 @@ function summon(){
   const empty=board.map((v,i)=>v||!OPEN[i]?-1:i).filter(i=>i>=0);
   if(!empty.length)return toast('빈 칸이 없어요. 같은 포켓몬끼리 겹쳐 진화시키거나 팔아서 자리를 만드세요.',2.2);
   const c=cost();if(state.coins<c)return toast(`코인이 ${Math.ceil(c-state.coins)} 모자라요. 적을 쓰러뜨리면 모여요.`,1.6);
-  state.coins-=c;state.summons++;
+  state.coins-=c;logSpend('s',c);state.summons++;
   const wts=state.deck.map(l=>mods.weight[l]||1),tot=wts.reduce((a,b)=>a+b,0);let rr=Math.random()*tot,line=state.deck[0];for(let q=0;q<wts.length;q++){rr-=wts[q];if(rr<=0){line=state.deck[q];break;}}
   // 합성 압박: 30% 확률로 이미 필드에 있는 1단계와 같은 계열이 나온다
   if(Math.random()<0.3){const t1=board.filter(v=>v&&v.tier===1&&!v.partner&&!isDitto(v)&&state.deck.includes(v.line));if(t1.length)line=pick(t1).line;}
@@ -24,7 +24,7 @@ function summon(){
 function upgrade(k){
   if(state.phase!=='play'&&state.phase!=='reward')return;
   if(state.up[k]>=MAXLV)return toast('이미 최대 레벨이에요.',1);const c=upCost(k);if(state.coins<c)return toast(`코인이 ${Math.ceil(c-state.coins)} 모자라요.`,1.2);
-  state.coins-=c;state.up[k]++;sfx('buy');recalc();
+  state.coins-=c;logSpend('u',c);state.up[k]++;sfx('buy');recalc();
   const L=LINES[state.deck[k]],lv=state.up[k];let n=0;
   for(let i=0;i<N;i++){const u=board[i];if(!u||u.line!==state.deck[k])continue;n++;const c2=cellCenter(i);
     fx.push({k:'ring',x:c2.x,y:c2.y,r:G.cell*0.5,col:'#ffd84a',t:.5,T:.5});fx.push({k:'txt',x:c2.x,y:c2.y-G.cell*0.55,s:'공격 ▲',col:'#ffe14d',t:.8,T:.8});}
@@ -87,7 +87,7 @@ function saveRun(extra){if(state.mode==='tut')return;
   if(dexDirty){dexDirty=false;saveProg();}
   store.set(SAVE_KEY,JSON.stringify(Object.assign({v:3,region:state.region,deck:state.deck,up:state.up,coins:state.coins,wave:state.wave,waveTypes:state.waveTypes,wmods:state.wmods,
     taken:state.taken,takenNames:state.takenNames,badges:state.badges,kills:state.kills,summons:state.summons,trIdx:state.trainer?state.trIdx:-1,speed:state.speed,mods,
-    mode:state.mode,rank:state.rank,rules:state.rules,seed:state.seed,raidLeg:state.raidLeg,daily:state.daily,balls:state.balls,master:state.master,bag:state.bag,mst:state.mst,missions:state.missions,mDone:state.mDone,
+    mode:state.mode,rank:state.rank,rules:state.rules,seed:state.seed,raidLeg:state.raidLeg,daily:state.daily,balls:state.balls,master:state.master,bag:state.bag,log:state.log,mst:state.mst,missions:state.missions,mDone:state.mDone,
     wildReady:state.wildReady,rerolls:state.rerolls,eggs:state.eggs,
     board:board.map(U),enemies:enemies.filter(e=>!e.dead&&!e.boss&&!e.wild&&!e.caught).map(E)},extra||{})));
 }
@@ -102,6 +102,7 @@ function resumeRun(s){wantGroup(1);wantGroup(0);wantGroup(REGION_G[s.region]||0)
   if(state.mode==='endless'||state.mode==='raid')MAXW=999;
   initRun(!s.mst);if(s.mst)Object.assign(state,{balls:s.balls,master:s.master||0,bag:s.bag||[],mst:s.mst,missions:s.missions||[],mDone:s.mDone||0,wildReady:s.wildReady,rerolls:s.rerolls||0,eggs:s.eggs||0,lastThrow:-9,conv:2});
   setVariant(variantFor(s.wave));layout();
+  state.log=s.log||null;if(!state.log){logStart();state.log.cut=true;}
   if(s.trIdx>=0&&TRAINERS[s.trIdx]){state.trainer=TRAINERS[s.trIdx];state.trIdx=s.trIdx;}
   $('speed').textContent=state.speed+'×';
   board=Array(N).fill(null);s.board.forEach((u,i)=>{if(u&&i<N&&OPEN[i])board[i]=Object.assign({cd:0.5,born:0},u);});
@@ -174,7 +175,7 @@ function openReward(g,resumed,again){
    sh.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{const o=opts[+b.dataset.r];o.ap();state.taken.push(o.id);state.takenNames.push(o.title);recalc();
      if(g&&state.twice&&!again)return openReward(g,true,true);closeModal();startWave();startMissions();});
    if($('reroll'))$('reroll').onclick=()=>{state.rerolls--;opts=shuffle(rewardPool()).slice(0,n);draw();};
-   sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const o=shop[+b.dataset.s];if(o.sold||state.coins<o.price)return;state.coins-=o.price;o.sold=true;o.buy();sfx('buy');draw();});};
+   sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const o=shop[+b.dataset.s];if(o.sold||state.coins<o.price)return;state.coins-=o.price;logSpend('b',o.price);o.sold=true;o.buy();sfx('buy');draw();});};
   draw();
 }
 // 관장 보상 화면의 상점
@@ -271,7 +272,7 @@ function finish(win,reason){if(state.mode==='tut')return tutDone(win);
   state.phase='over';state.sel=-1;renderPanel();closeLayer();clearRun();hideTip();
   const id=REGION.id,reached=win?MAXW:state.wave,adv=state.mode==='adv',first=adv&&win&&!PROG.clear[id];achNew=[];
   if(adv){PROG.best[id]=Math.max(reached,PROG.best[id]||0);if(win)PROG.clear[id]=true;PROG.badges[id]=Math.max(PROG.badges[id]||0,state.badges);}saveProg();
-  const modeLine=recordRun(win);
+  const modeLine=recordRun(win);logEnd(win,reason,reached);
   const best=adv?PROG.best[id]:state.mode==='endless'?PROG.endless[id]:state.mode==='raid'?PROG.raid[weekKey()]:state.mode==='daily'?PROG.daily[state.daily]:state.wave;
   const unlock=(first&&id==='kanto'?'<div class="box"><b>성도 지방과 챔피언로드가 열렸어요</b><span class="sub">성도 계열 8개와 트레이너 골드·크리스·실버도 이제 쓸 수 있어요. 관동 챔피언 랭크 1도 열렸어요.</span></div>':first&&id==='johto'?'<div class="box"><b>호연 지방이 열렸어요</b><span class="sub">호연 계열 3개와 트레이너 이향·휘웅이 열렸어요.</span></div>':first?`<div class="box"><b>${REGION.n} 챔피언 랭크 1이 열렸어요</b></div>`:'')
     +(achNew.length?`<div class="box"><b>업적 달성</b>${achNew.map(a=>`<span class="sub">${a.n}${a.sup?` · 출발 지원 '${SUPPORTS[a.sup].n}' 열림`:''}</span>`).join('')}</div>`:'')
@@ -318,6 +319,7 @@ function showMenu(){
      <button class="gbtn" data-m="mus">${MUS.on?'음악 끄기':'음악 켜기'}</button>
      <button class="gbtn" data-m="snd">${soundOn?'효과음 끄기':'효과음 켜기'}</button>
      <button class="gbtn" data-m="guide">규칙과 도감</button>
+     <button class="gbtn" data-m="log">내 기록</button>
      <button class="gbtn ${quit?'danger':''}" data-m="quit">${quit?'한 번 더 누르면 이 판을 끝내요':'이 판 포기하기'}</button>
     </div></div>`);
    $('lsheet').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const m=b.dataset.m;
@@ -326,6 +328,7 @@ function showMenu(){
      else if(m==='mus'){MUS.on=!MUS.on;store.set('pkrtd-bgm',MUS.on?'1':'0');music();draw();}
      else if(m==='info'){state.info=!state.info;draw();}
      else if(m==='guide')showGuide();
+     else if(m==='log')showLog(draw);
      else if(m==='quit'){if(quit){closeLayer();state.paused=false;syncPause();finish(false,'이 판을 포기했어요.');}else{quit=true;draw();}}});};
   draw();
 }

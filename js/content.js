@@ -157,7 +157,7 @@ function luckRoll(k){
   if(state.phase!=='play')return;
   const empty=board.map((v,i)=>v||!OPEN[i]?-1:i).filter(i=>i>=0);if(!empty.length)return toast('빈 칸이 없어요.',1.4);
   const c=luckCost(k);if(state.coins<c)return toast(`코인이 ${Math.ceil(c-state.coins)} 모자라요.`,1.4);
-  state.coins-=c;
+  state.coins-=c;logSpend('l',c);
   const ok=Math.random()<(k===3?0.35:0.55);
   if(!ok){toast('꽝! 이번엔 아무도 나오지 않았어요.',1.4);const p=$('luck');if(p){p.classList.remove('miss');void p.offsetWidth;p.classList.add('miss');}return false;}
   const line=pick(state.deck.filter(l=>LINES[l].mech!=='ditto'));const L=LINES[line];

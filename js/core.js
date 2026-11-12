@@ -312,7 +312,7 @@ function newGame(deck,tr,R=REGION,opt={}){
   board=Array(N).fill(null);enemies=[];fx=[];projs=[];zones=[];
   if(tr){tr.ap(mods,deck,state);state.trainer=tr;state.trIdx=TRAINERS.indexOf(tr);}
   applySupport(opt.support);
-  placePartner();
+  placePartner();logStart();
   hudWave=-1;recalc();startWave();closeModal();
   oakIntro();
 }
@@ -356,7 +356,7 @@ function spawnEnemy(isBoss){
   if(typeof dexSeen==='function')dexSeen(sid);
 }
 function endWave(){
-  const w=state.wave;state.coins+=8+w;
+  const w=state.wave;state.coins+=8+w;logWave();
   const g=gymAt(w);
   partnerXp(8);
   if(g){g.ap(mods);state.badges++;state.balls=Math.min(6,(state.balls||0)+1);recalc();noteBadge();gymStars(g);featCheckGym();}
@@ -407,7 +407,7 @@ function update(dt){
     attack(u,c,inR);u.cd=1/rate;
   }
   updateProjs(dt);
-  enemies=enemies.filter(e=>!e.dead);
+  enemies=enemies.filter(e=>!e.dead);if(state.log&&enemies.length>state.log.peak)state.log.peak=enemies.length;
   for(const f of fx)f.t-=dt;fx=fx.filter(f=>f.t>0);
   if(enemies.length>fieldCap())return finish(false,`필드의 적이 ${fieldCap()}마리를 넘었어요.`);
   if(state.bossDown){state.bossDown=false;return endWave();}

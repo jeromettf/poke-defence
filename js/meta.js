@@ -50,10 +50,10 @@ function showTitle(){
     <div class="title-btns">${run?`<button class="gbtn summon" id="tCont">이어하기 <small>${rn.n} ${run.wave+(run.rw!=null?0:1)}웨이브</small></button>`:''}
      <button class="gbtn ${run?'':'summon'}" id="tStart">모험 떠나기</button>
      <button class="gbtn" id="tMode" ${F('modes')?'':'aria-disabled="true" style="opacity:.55"'}>도전 모드${F('modes')?'':' <small>20웨이브에 열려요</small>'}</button>
-     <div class="row4"><button class="gbtn" id="tTut">연습</button><button class="gbtn" id="tDex">도감</button><button class="gbtn" id="tAch">업적</button><button class="gbtn" id="tGuide">규칙</button></div></div>
+     <div class="row4"><button class="gbtn" id="tTut">연습</button><button class="gbtn" id="tDex">도감</button><button class="gbtn" id="tAch">업적</button><button class="gbtn" id="tLog">기록</button><button class="gbtn" id="tGuide">규칙</button></div></div>
     <div class="best">${best||'아직 기록이 없어요'} · 별 ${totalStars()} · 도감 ${dexCount()}/${dexAll().length}</div></div>`);
   if(run)$('tCont').onclick=()=>resumeRun(run);
-  $('tStart').onclick=()=>showRegions({mode:'adv'});$('tGuide').onclick=showGuide;$('tMode').onclick=()=>F('modes')?showModes():toast('도전 모드는 모험에서 20웨이브에 이르면 열려요.',2.4);$('tTut').onclick=startTutorial;$('tDex').onclick=showDex;$('tAch').onclick=showAch;
+  $('tStart').onclick=()=>showRegions({mode:'adv'});$('tLog').onclick=showLog;$('tGuide').onclick=showGuide;$('tMode').onclick=()=>F('modes')?showModes():toast('도전 모드는 모험에서 20웨이브에 이르면 열려요.',2.4);$('tTut').onclick=startTutorial;$('tDex').onclick=showDex;$('tAch').onclick=showAch;
   $('tMus').onclick=()=>{MUS.on=!MUS.on;store.set('pkrtd-bgm',MUS.on?'1':'0');music();$('tMus').textContent=MUS.on?'음악 켜짐':'음악 꺼짐';};
 }
 

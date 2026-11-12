@@ -86,7 +86,7 @@ function frame(ts){
   const dt=Math.min(0.05,last?(ts-last)/1000:0);last=ts;clock+=dt;
   if(state.cut){state.cut.t-=dt;if(state.cut.t<=0){state.cut=null;toast(state.cutMsg,3.4);}}
   else if(hitStop>0)hitStop-=dt;
-  else if(state.phase==='play'&&!state.paused){const sd=cutin&&cutin.T-cutin.t<0.28?dt*0.3:dt;for(let k=0;k<state.speed;k++){if(state.phase!=='play')break;update(sd);}}
+  else if(state.phase==='play'&&!state.paused){const sd=cutin&&cutin.T-cutin.t<0.28?dt*0.3:dt;for(let k=0;k<state.speed;k++){if(state.phase!=='play')break;update(sd);}if(state.phase==='play')logTick(dt);}
   updScene(dt);
   shake*=Math.pow(0.02,dt);
   if(recalcSoon){recalcSoon=false;recalc();}

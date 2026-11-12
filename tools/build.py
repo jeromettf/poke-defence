@@ -1,7 +1,7 @@
 # src/head.html + src/body.html → index.html(일반 웹페이지, GitHub Pages) / artifact.html(claude.ai 아티팩트용 본문)
 import os,hashlib
 R=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-JS=['sprites','data','regions','core','skills','content','ui','meta','tutorial','render','scene','main']
+JS=['sprites','data','regions','core','skills','content','ui','meta','log','tutorial','render','scene','main']
 head=open(f'{R}/src/head.html').read().strip()
 body=open(f'{R}/src/body.html').read().strip()
 loading='<div class="loading" id="loading"><div class="logo">포켓몬<br>랜덤 디펜스</div><div class="lbar"><i id="lbar"></i></div><p>스프라이트 불러오는 중</p></div>'
