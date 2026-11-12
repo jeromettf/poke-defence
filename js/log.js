@@ -9,20 +9,22 @@ const MODE_N={adv:'모험',endless:'끝없는 모드',raid:'레이드',daily:'�
 const WHY_N={cap:'필드 초과',boss:'관장 시간 초과',quit:'포기',win:'승리'};
 const FEAT_N={caught:'포획',lucky:'운 뽑기 성공',missions:'미션',megas:'메가진화',combos:'특수 조합',wilds:'야생 강적',early:'일찍 부르기',evos:'진화',legends:'전설 합체'};
 
-function logStart(){state.log={t0:Date.now(),play:0,spd:[0,0,0],sp:{s:0,u:0,l:0,b:0},c0:state.coins,w:[],peak:0};}
+function logStart(){state.log={t0:Date.now(),play:0,spd:[0,0,0],sp:{s:0,u:0,l:0,b:0,a:0},c0:state.coins,w:[],peak:0};}
 function logSpend(k,n){const L=state.log;if(L)L.sp[k]=(L.sp[k]||0)+n;}
 function logTick(dt){const L=state.log;if(!L)return;L.play+=dt;L.spd[Math.min(3,state.speed||1)-1]+=dt;}
 function logWave(){const L=state.log;if(!L)return;L.w.push([state.wave,Math.round(state.coins),state.up.reduce((a,b)=>a+b,0),L.peak]);L.peak=0;}
 function whyCode(win,reason){return win?'win':/포기/.test(reason)?'quit':/제한 시간/.test(reason)?'boss':'cap';}
 function logEnd(win,reason,reached){
-  const L=state.log;if(!L||state.mode==='tut')return;
+  const L=state.log;if(!L||state.mode==='tut')return null;
+  // 끝나지 못한 마지막 웨이브도 한 점 남긴다
+  if(!win&&(!L.w.length||L.w[L.w.length-1][0]<reached))L.w.push([reached,Math.round(state.coins),state.up.reduce((a,b)=>a+b,0),L.peak]);
   const d=new Date(L.t0),p=n=>String(n).padStart(2,'0');
   const top=board.filter(u=>u&&u.dealt).sort((a,b)=>b.dealt-a.dealt).map(u=>def(u).n).filter((n,i,a)=>a.indexOf(n)===i).slice(0,3);
   LOGS.push({d:`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`,
     rg:REGION.id,m:state.mode,rk:state.rank||0,tr:state.trainer?state.trainer.n:'',deck:state.deck.map(i=>LINES[i].n[0]),up:state.up.slice(),
     why:whyCode(win,reason),wv:reached,b:state.badges,k:state.kills,s:state.summons,coin:Math.round(state.coins),c0:L.c0,sp:L.sp,
     cap:fieldCap(),play:Math.round(L.play),spd:L.spd.map(Math.round),f:Object.assign({},state.mst),leg:board.filter(u=>u&&u.tier===4).length,top,w:L.w,cut:!!L.cut});
-  while(LOGS.length>LOG_MAX)LOGS.shift();saveLogs();state.log=null;
+  while(LOGS.length>LOG_MAX)LOGS.shift();saveLogs();state.log=null;return LOGS[LOGS.length-1];
 }
 
 // ── 글로 옮기기 ──
@@ -34,7 +36,7 @@ function logText(r,k){
   return `#${k} ${r.d} ${rgN(r.rg)} ${MODE_N[r.m]||r.m}${r.rk?' 랭크'+r.rk:''}${r.tr?' '+r.tr:''} | ${WHY_N[r.why]} ${r.wv}웨이브, 배지 ${r.b}, 필드 한도 ${r.cap||60}${r.cut?' (이어하기로 일부 빠짐)':''}
  시간 ${mmss(r.play)} (1배 ${pc(r.spd[0])}%, 2배 ${pc(r.spd[1])}%, 3배 ${pc(r.spd[2])}%)
  덱 ${r.deck.map((n,i)=>n+' Lv'+r.up[i]).join(', ')} | 전설 ${r.leg} | 많이 싸운 포켓몬 ${r.top.join(', ')||'없음'}
- 쓴 코인: 소환 ${r.sp.s}, 강화 ${r.sp.u}, 운 뽑기 ${r.sp.l}, 상점 ${r.sp.b} | 남은 코인 ${r.coin} | 소환 ${r.s}번, 쓰러뜨린 적 ${r.k}
+ 쓴 코인: 소환 ${r.sp.s}, 강화 ${r.sp.u}, 운 뽑기 ${r.sp.l}, 상점 ${r.sp.b}, 각성 ${r.sp.a||0} | 남은 코인 ${r.coin} | 소환 ${r.s}번, 쓰러뜨린 적 ${r.k}
  쓴 기능: ${f}
  웨이브(번호,남은 코인,강화 합,최대 적): ${r.w.map(x=>x.join(',')).join(' / ')}`;
 }

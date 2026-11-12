@@ -98,13 +98,13 @@ function calcStats(u,i){
     if(v.partner&&v.partner.lv>=7&&Math.max(Math.abs(j%COLS-c),Math.abs(((j/COLS)|0)-r))<=1)aD=Math.max(aD,0.15);
     const m=def(v).mech;if(!isAura(m))continue;
     const vt=Math.min(v.tier,3),rad=vt>=3?2:1,cc=j%COLS,rr=(j/COLS)|0;
-    if(Math.max(Math.abs(cc-c),Math.abs(rr-r))>rad)continue;const val=AURA[m][vt-1]*(v.mega&&m!=='auraType'?1.4+0.15*(v.mega-1):1);
+    if(Math.max(Math.abs(cc-c),Math.abs(rr-r))>rad)continue;const awM=1+0.15*(v.awk||0),val=AURA[m][vt-1]*(v.mega&&m!=='auraType'?1.4+0.15*(v.mega-1):1)*(m!=='auraType'?awM:1);
     if(m==='auraRate')aR=Math.max(aR,val*sb);
     else if(m==='auraDmg')aD=Math.max(aD,val*sb);
     else if(m==='auraCrit'){aC=Math.max(aC,val*sb);cD=Math.max(cD,[0.25,0.5,1][vt-1]*sb);}
     else if(m==='auraRange')aG=Math.max(aG,val*sb);
     else if(m==='auraSkill')aS=Math.max(aS,val*sb);
-    else if(m==='auraAll'){aD=Math.max(aD,0.6*sb);aR=Math.max(aR,0.4*sb);}
+    else if(m==='auraAll'){aD=Math.max(aD,0.6*sb*awM);aR=Math.max(aR,0.4*sb*awM);}
     else if(m==='auraType'){nveFix=Math.max(nveFix,val);if(vt>=3)seAdd=0.5;}
     else if(m==='auraGuard'){guard=true;bossB=Math.max(bossB,val*sb);}}
   const syn=Math.max(0,...d.t.map(t=>synB[t]||0));
@@ -115,8 +115,8 @@ function calcStats(u,i){
   // 날씨
   let wm=1;const wk=weatherAt(state.wave);if(wk){const W=WEATHER[wk],k=1+mods.weather;if(d.t.some(t=>W.up.includes(t)))wm+=(wk==='sand'?0.35:0.4)*k;if(d.t.some(t=>W.down.includes(t)))wm-=0.25;}
   return {n:d.n,id:d.id,t:d.t,role:d.role,mech:d.mech,
-    dmg:d.dmg*tm*nat.dmg*(1+mods.dmgAll)*(1+syn)*(1+aD)*(1+0.3*lv)*(1+grow)*(1+lb)*(1+tb)*(1+t3)*(1+nb)*(noct&&night?2:1)*(it==='orb'?1.35:1)*(1+0.1*pair)*(pl?1+0.12*(pl-1):1)*wm*(P.mew?1.15:1),
-    rate:d.rate*(1+0.12*(tr-1))*nat.rate*(1+mods.rateAll)*(1+aR)*(1+0.06*lv)*(noct&&!night?1.2:1)*(it==='scarf'?1.3:1)*(pl>=3?1.2:1),
+    dmg:d.dmg*tm*nat.dmg*(1+mods.dmgAll)*(1+syn)*(1+aD)*(1+0.3*lv)*(1+grow)*(1+lb)*(1+tb)*(1+t3)*(1+nb)*(noct&&night?2:1)*(it==='orb'?1.35:1)*(1+0.1*pair)*(pl?1+0.12*(pl-1):1)*wm*(P.mew?1.15:1)*(1+0.25*(u.awk||0)),
+    rate:d.rate*(1+0.12*(tr-1))*nat.rate*(1+mods.rateAll)*(1+aR)*(1+0.06*lv)*(noct&&!night?1.2:1)*(it==='scarf'?1.3:1)*(pl>=3?1.2:1)*(1+0.1*(u.awk||0)),
     range:(d.range+(d.range?0.25*(tr-1)+aG:0)+(noct&&!night?1:0)+(d.range&&it==='wide'?0.8:0)+(d.range&&u.mega?0.3:0))*nat.range*(1+mods.rangeAll),
     crit:d.mech==='alwayscrit'?1:mods.crit+nat.crit+aC+(d.mech==='crit'?0.15+0.05*tr:0)+(it==='scope'?0.25:0)+(P.latios?0.1:0),
     critM:(d.mech==='crit'?3:2)+cD,
@@ -356,7 +356,7 @@ function spawnEnemy(isBoss){
   if(typeof dexSeen==='function')dexSeen(sid);
 }
 function endWave(){
-  const w=state.wave;state.coins+=8+w;logWave();
+  const w=state.wave;state.coins+=8+w;logWave();if(typeof waveCoins==="function")waveCoins(8+w);
   const g=gymAt(w);
   partnerXp(8);
   if(g){g.ap(mods);state.badges++;state.balls=Math.min(6,(state.balls||0)+1);recalc();noteBadge();gymStars(g);featCheckGym();}

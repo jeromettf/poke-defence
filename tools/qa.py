@@ -68,8 +68,12 @@ with sync_playwright() as p:
     for e in errs:warn.append('스크립트 오류: '+e)
     cf=os.path.join(R,'fonts','chars.txt')
     if os.path.exists(cf):
-        have=set(open(cf,encoding='utf-8').read());miss=sorted(c for c in seen if c not in have and not c.isspace())
+        have=set(open(cf,encoding='utf-8').read())
+        import glob
+        for g in glob.glob(os.path.join(R,'js','*.js')):seen.update(c for c in open(g,encoding='utf-8').read() if c.isprintable())
+        miss=sorted(c for c in seen if c not in have and not c.isspace())
         if miss:warn.append('글꼴에 없는 글자(tools/build_fonts.py 다시 돌리기): '+''.join(miss[:40]))
+    else:warn.append('fonts/chars.txt가 없어 글자 점검을 못 했어요(tools/build_fonts.py 다시 돌리기)')
     b.close()
 srv.shutdown()
 

@@ -465,3 +465,9 @@ h4{margin:8px 0 0;font-size:12px;color:#b9c6e8;letter-spacing:.04em;font-weight:
 .lleg .lc-coin{color:#a87b06}.lleg .lc-foe{color:var(--danger)}
 .ltxt{margin:0;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere;font:12px/1.5 var(--f-body);color:var(--ink-2)}
 .lcopy{width:100%;min-height:140px;font:12px/1.4 var(--f-body);border-radius:var(--r1);border:1px solid var(--line-2);padding:8px;user-select:text;-webkit-user-select:text}
+
+/* 웨이브 보상 코인 */
+.cfly{position:fixed;left:-7px;top:-7px;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3a8,#ffd84a 45%,#c9901c);box-shadow:0 0 0 1.5px #6b4a0c;pointer-events:none;z-index:40}
+.cgain{position:fixed;pointer-events:none;z-index:40;font-family:var(--f-display);font-size:22px;color:#ffd84a;paint-order:stroke fill;-webkit-text-stroke:4px #0b1226}
+.plate.coin.gain{animation:cgain .35s ease-out}
+@keyframes cgain{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}

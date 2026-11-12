@@ -64,8 +64,31 @@ function fuse(i){
   const c=cellCenter(i);fx.push({k:'ring',x:c.x,y:c.y,r:G.cell*1.2,col:'#f2c14e',t:.6,T:.6});
   toast(`전설 합체: ${LEGENDS[u.form].n}`,1.8);recalc();camP=camT=0.9;cutCD=0;cutin={id:LEGENDS[u.form].id,n:LEGENDS[u.form].n,sk:'전설 합체',col:'#ffd257',t:1.1,T:1.1,leg:true};cutCD=5;
 }
+// 전설 각성: 25웨이브부터 남는 코인을 전설 포켓몬에 쓴다. 단계마다 공격 +25%, 공격 속도 +10%
+const AWK_FROM=25,AWK_MAX=3,awkCost=u=>[400,800,1200][u.awk||0];
+const canAwk=u=>u&&u.tier===4&&state.wave>=AWK_FROM&&(u.awk||0)<AWK_MAX;
+function awaken(i){const u=board[i];if(!canAwk(u))return;const c=awkCost(u);if(state.coins<c)return toast(`코인이 ${Math.ceil(c-state.coins)} 모자라요.`,1.2);
+  state.coins-=c;logSpend('a',c);u.awk=(u.awk||0)+1;u.pop=0.3;sfx('legend');const p=cellCenter(i);
+  fx.push({k:'ring',x:p.x,y:p.y,r:G.cell*1.1,col:'#ffd257',t:.5,T:.5});fx.push({k:'txt',x:p.x,y:p.y-G.cell*0.8,s:'각성 '+u.awk+'단계',col:'#ffe58a',big:true,t:1,T:1});
+  recalc();toast(`${def(u).n} 각성 ${u.awk}단계: `+(isAura(u.s.mech)?`지원 효과 +${15*u.awk}%`:`공격 +${25*u.awk}%, 공격 속도 +${10*u.awk}%`),1.6);}
 function sell(i){const u=board[i];if(!u)return;if(state.noSell)return toast('판매 금지 규칙이 붙은 판이에요.',1.4);if(u.partner)return toast('파트너는 팔 수 없어요.',1.4);
   state.coins+=REFUND[u.tier]*(u.mega?2:1);dropItem(u);board[i]=null;state.sel=-1;recalc();}
+
+// 웨이브 보상 코인이 판 가운데서 위 코인 칸으로 날아간다. 3배속이면 개수를 줄이고 짧게.
+const lowMotion=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){return false;}};
+function waveCoins(n){
+  const dst=$('coins');if(!dst||document.hidden)return;const sp=state.speed||1,dur=sp>=3?380:sp>=2?480:600;
+  const pulse=()=>{dst.classList.remove('gain');void dst.offsetWidth;dst.classList.add('gain');};
+  if(lowMotion()||!dst.animate)return pulse();
+  const sr=$('stage').getBoundingClientRect(),dr=dst.getBoundingClientRect(),x0=sr.left+G.W/2,y0=sr.top+toSY(G.oy+G.bh*0.5),x1=dr.left+18,y1=dr.top+dr.height/2;
+  const k=sp>=3?3:6;
+  const lab=document.createElement('div');lab.className='cgain';lab.textContent='+'+n;lab.style.left=x0+'px';lab.style.top=y0+'px';document.body.appendChild(lab);
+  lab.animate([{opacity:0,transform:'translate(-50%,-30%) scale(.8)'},{opacity:1,transform:'translate(-50%,-80%) scale(1)',offset:.25},{opacity:0,transform:'translate(-50%,-160%) scale(1)'}],{duration:dur+300,easing:'ease-out'}).onfinish=()=>lab.remove();
+  for(let q=0;q<k;q++){const c=document.createElement('i');c.className='cfly';document.body.appendChild(c);
+    const a=q/k*Math.PI*2,sx=x0+Math.cos(a)*22,sy=y0+Math.sin(a)*14,mx=(sx+x1)/2+(Math.random()-.5)*60,my=Math.min(sy,y1)-30;
+    const an=c.animate([{transform:`translate(${sx}px,${sy}px) scale(.6)`,opacity:0},{transform:`translate(${sx}px,${sy-10}px) scale(1)`,opacity:1,offset:.15},{transform:`translate(${mx}px,${my}px) scale(.9)`,offset:.55},{transform:`translate(${x1}px,${y1}px) scale(.5)`,opacity:.9}],{duration:dur,delay:q*40,easing:'cubic-bezier(.5,0,.6,1)',fill:'backwards'});
+    an.onfinish=()=>{c.remove();if(q===k-1)pulse();};}
+}
 
 // ───────── 기록과 이어하기 ─────────
 // 지방별 최고 기록·배지·정복 여부는 PROG, 진행 중인 판은 웨이브가 시작될 때마다 SAVE_KEY에 남긴다
@@ -82,7 +105,7 @@ const trUnlocked=T=>!T.need||(T.need==='kanto'?!!PROG.clear.kanto:T.need==='joht
 const lineOpen=L=>!L.rg||(L.rg==='johto'?!!PROG.clear.kanto:!!PROG.clear.johto);
 function saveRun(extra){if(state.mode==='tut')return;
   if(!state.deck||!state.deck.length||state.phase==='over')return;
-  const U=u=>u&&{line:u.line,tier:u.tier,nat:u.nat,form:u.form,grow:u.grow||0,ss:u.ss||0,cnt:u.cnt||0,item:u.item||null,mega:u.mega||0,partner:u.partner||null,dealt:u.dealt||0};
+  const U=u=>u&&{line:u.line,tier:u.tier,nat:u.nat,form:u.form,grow:u.grow||0,ss:u.ss||0,cnt:u.cnt||0,item:u.item||null,mega:u.mega||0,awk:u.awk||0,partner:u.partner||null,dealt:u.dealt||0};
   const E=e=>({t:e.t,name:e.name,sid:e.sid,hp:e.hp,max:e.max,sp:e.sp,p:e.p,big:e.big,fast:e.fast});
   if(dexDirty){dexDirty=false;saveProg();}
   store.set(SAVE_KEY,JSON.stringify(Object.assign({v:3,region:state.region,deck:state.deck,up:state.up,coins:state.coins,wave:state.wave,waveTypes:state.waveTypes,wmods:state.wmods,
@@ -272,7 +295,7 @@ function finish(win,reason){if(state.mode==='tut')return tutDone(win);
   state.phase='over';state.sel=-1;renderPanel();closeLayer();clearRun();hideTip();
   const id=REGION.id,reached=win?MAXW:state.wave,adv=state.mode==='adv',first=adv&&win&&!PROG.clear[id];achNew=[];
   if(adv){PROG.best[id]=Math.max(reached,PROG.best[id]||0);if(win)PROG.clear[id]=true;PROG.badges[id]=Math.max(PROG.badges[id]||0,state.badges);}saveProg();
-  const modeLine=recordRun(win);logEnd(win,reason,reached);
+  const modeLine=recordRun(win),rec=logEnd(win,reason,reached);
   const best=adv?PROG.best[id]:state.mode==='endless'?PROG.endless[id]:state.mode==='raid'?PROG.raid[weekKey()]:state.mode==='daily'?PROG.daily[state.daily]:state.wave;
   const unlock=(first&&id==='kanto'?'<div class="box"><b>성도 지방과 챔피언로드가 열렸어요</b><span class="sub">성도 계열 8개와 트레이너 골드·크리스·실버도 이제 쓸 수 있어요. 관동 챔피언 랭크 1도 열렸어요.</span></div>':first&&id==='johto'?'<div class="box"><b>호연 지방이 열렸어요</b><span class="sub">호연 계열 3개와 트레이너 이향·휘웅이 열렸어요.</span></div>':first?`<div class="box"><b>${REGION.n} 챔피언 랭크 1이 열렸어요</b></div>`:'')
     +(achNew.length?`<div class="box"><b>업적 달성</b>${achNew.map(a=>`<span class="sub">${a.n}${a.sup?` · 출발 지원 '${SUPPORTS[a.sup].n}' 열림`:''}</span>`).join('')}</div>`:'')
@@ -280,11 +303,13 @@ function finish(win,reason){if(state.mode==='tut')return tutDone(win);
   const legends=board.filter(u=>u&&u.tier===4).length;
   const top=board.filter(u=>u&&u.dealt).sort((a,b)=>b.dealt-a.dealt).slice(0,5),mx=top.length?top[0].dealt:1;
   const mvp=top.length?`<div class="box"><b>많이 싸운 포켓몬</b><div class="mvp">${top.map(u=>`<div class="row"><span class="face">${sprTag(u.s.id)}</span><span class="nm"><span>${u.s.n}</span><span class="barw"><i style="width:${u.dealt/mx*100}%"></i></span></span><b class="tnum">${fmt(u.dealt)}</b></div>`).join('')}</div></div>`:'';
+  let flow='';if(rec&&rec.w.length>=2){const pk=rec.w.reduce((a,x)=>x[3]>a[3]?x:a);
+    flow=`<div class="box"><b>웨이브 흐름</b>${logChart(rec)}${!win&&pk[3]>=rec.cap*0.5?`<span class="sub">필드 적이 가장 많이 쌓인 건 ${pk[0]}웨이브(${pk[3]}마리)예요.</span>`:''}</div>`;}
   showModal(`<div class="scr-head"><h2>${win?REGION.winTitle:'패배'}</h2></div>
    <div class="scr-body"><p class="sub">${reason}</p>${unlock}
    <div class="result"><div class="stat"><b class="num">${reached}</b><span>도달 웨이브</span></div>
    <div class="stat"><b class="num">${state.mode==='raid'?Math.max(0,state.badges-3):state.badges}</b><span>${state.mode==='raid'?'레이드 단계':'배지'}</span></div>
-   <div class="stat"><b class="num">${best||0}</b><span>최고 기록</span></div></div>${mvp}
+   <div class="stat"><b class="num">${best||0}</b><span>최고 기록</span></div></div>${mvp}${flow}
    <div class="box"><div class="badges">${GYMS.map((g,k)=>`<span class="badge ${k<state.badges?'on':''}" style="background:${g.col}"></span>`).join('')}</div>
    <p class="sub">${state.trainer?state.trainer.n+' 덱: ':'덱: '}${state.deck.map((i,k)=>`${LINES[i].n[0]} Lv${state.up[k]}`).join(', ')}${legends?` · 전설 ${legends}마리`:''} · 쓰러뜨린 적 ${state.kills}</p></div></div>
    <div class="scr-foot"><button class="gbtn" id="toTitle">타이틀</button><button class="gbtn summon" id="again">새 판 시작</button></div>`);
@@ -337,7 +362,7 @@ function showMenu(){
 let toastT=0;
 function toast(msg,sec=1.4){const t=$('toast');t.textContent=msg;delete t.dataset.off;toastT=Math.max(1.8,sec);}
 function inAura(i,j){const v=board[i];if(!v)return false;const rad=Math.min(v.tier,3)>=3?2:1;return Math.max(Math.abs(i%COLS-j%COLS),Math.abs(((i/COLS)|0)-((j/COLS)|0)))<=rad;}
-function auraVal(m,t){if(m==='auraAll')return '+60%·+40%';const v=AURA[m][t-1]*(m==='auraType'?1:1+mods.supp);return m==='auraRange'?'+'+v.toFixed(1)+'칸':m==='auraType'?'×'+v:m==='auraCrit'?'+'+Math.round(v*100)+'%':'+'+Math.round(v*100)+'%';}
+function auraVal(m,t,aw=0){const k=1+0.15*aw;if(m==='auraAll')return `+${Math.round(60*k)}%·+${Math.round(40*k)}%`;const v=AURA[m][t-1]*(m==='auraType'?1:(1+mods.supp)*k);return m==='auraRange'?'+'+v.toFixed(1)+'칸':m==='auraType'?'×'+v:m==='auraCrit'?'+'+Math.round(v*100)+'%':'+'+Math.round(v*100)+'%';}
 function renderPanel(){
   const p=$('panel');const i=state.sel;const u=i>=0?board[i]:null;
   if(i!==radialSel){radialSel=i;state.detail=false;}
@@ -345,10 +370,10 @@ function renderPanel(){
   if(!u||state.phase!=='play'||!state.detail){p.hidden=true;return;}
   p.hidden=false;hideTip();
   const s=u.s,nat=NATURES[u.nat],b=s.buff,aura=isAura(s.mech);
-  const stars=u.tier===4?(LEGENDS[u.form].sp?'특수':'전설'):u.mega?'메가':u.partner?'파트너':u.tier+'단계';
+  const stars=u.tier===4?(LEGENDS[u.form].sp?'특수':'전설')+(u.awk?' 각성'+u.awk:''):u.mega?'메가':u.partner?'파트너':u.tier+'단계';
   const lp=u.tier===3?legendPartners(i):null;
   const pc=v=>Math.round(v*100);
-  const bonus=[u.partner?['p',`파트너 Lv${u.partner.lv} 공격 +${12*(u.partner.lv-1)}%`]:null,u.mega?['p',aura?`메가 ${u.mega}단계 지원 효과 ×${(1.4+0.15*(u.mega-1)).toFixed(2)}`:`메가 ${u.mega}단계 공격 ×${(1.8+0.4*(u.mega-1)).toFixed(1)}`]:null,u.item?['b',ITEMS[u.item].n+': '+ITEMS[u.item].d]:null,s.pair?['g',`짝꿍 +${10*s.pair}%`]:null,s.wm&&s.wm!==1?[s.wm>1?'g':'r',`날씨 ${s.wm>1?'+':''}${pc(s.wm-1)}%`]:null,s.lv?['g',`강화 Lv${s.lv} 공격 +${30*s.lv}%`]:null,s.syn?['g',`시너지 +${pc(s.syn)}%`]:null,b.aD?['g',`응원 공격 +${pc(b.aD)}%`]:null,b.aR?['g',`응원 속도 +${pc(b.aR)}%`]:null,
+  const bonus=[u.partner?['p',`파트너 Lv${u.partner.lv} 공격 +${12*(u.partner.lv-1)}%`]:null,u.mega?['p',aura?`메가 ${u.mega}단계 지원 효과 ×${(1.4+0.15*(u.mega-1)).toFixed(2)}`:`메가 ${u.mega}단계 공격 ×${(1.8+0.4*(u.mega-1)).toFixed(1)}`]:null,u.item?['b',ITEMS[u.item].n+': '+ITEMS[u.item].d]:null,u.awk?['p',aura?`각성 ${u.awk}단계 지원 효과 +${15*u.awk}%`:`각성 ${u.awk}단계 공격 +${25*u.awk}%, 속도 +${10*u.awk}%`]:null,s.pair?['g',`짝꿍 +${10*s.pair}%`]:null,s.wm&&s.wm!==1?[s.wm>1?'g':'r',`날씨 ${s.wm>1?'+':''}${pc(s.wm-1)}%`]:null,s.lv?['g',`강화 Lv${s.lv} 공격 +${30*s.lv}%`]:null,s.syn?['g',`시너지 +${pc(s.syn)}%`]:null,b.aD?['g',`응원 공격 +${pc(b.aD)}%`]:null,b.aR?['g',`응원 속도 +${pc(b.aR)}%`]:null,
     b.aC?['g',`응원 치명 +${pc(b.aC)}%`]:null,b.aG?['g',`응원 사거리 +${b.aG.toFixed(1)}`]:null,s.grow?['g',`성장 +${pc(s.grow)}%`]:null,s.nb?['g','밤 +30%']:null,mods.dmgAll?['',`보상·배지 공격 +${pc(mods.dmgAll)}%`]:null,
     ['',`성격 ${nat.n}: ${nat.d}`]].filter(Boolean);
   const mk=u.tier===1&&s.mech==='eevee'?'eevee':s.mech;
@@ -360,7 +385,7 @@ function renderPanel(){
     `<div class="skill"><b>고유 스킬 · ${sk.n}</b> <span style="color:var(--ink-2);font-size:12px">${aura?`${((u.tier>=3?5:7)/(1+mods.skill)).toFixed(1)}초마다`:sk.cd?`${skillCd(u,sk).toFixed(1)}초마다`:`공격마다 ${Math.round(skillChance(u)*100)}%`}</span><br>${sk.d}</div>`;
   p.innerHTML=`<div class="ph"><div class="face">${sprTag(s.id)}</div><div class="who"><h3>${s.n} <span class="tier t${u.tier}">${stars}</span></h3>
    <div class="chips" style="margin-top:5px">${roleTag(s.role)}${s.t.map(chip).join('')}</div></div><button class="dbtn x" data-a="close">닫기</button></div>
-   ${aura?`<div class="stats"><div class="stat"><b>${['','1칸','1칸','2칸'][Math.min(u.tier,3)]}</b><span>범위</span></div><div class="stat"><b>${auraVal(s.mech,Math.min(u.tier,3))}</b><span>효과</span></div><div class="stat"><b>${board.filter((v,j)=>v&&j!==i&&inAura(i,j)).length}</b><span>받는 아군</span></div><div class="stat"><b>×${(1+mods.supp).toFixed(1)}</b><span>응원단</span></div></div>`:
+   ${aura?`<div class="stats"><div class="stat"><b>${['','1칸','1칸','2칸'][Math.min(u.tier,3)]}</b><span>범위</span></div><div class="stat"><b>${auraVal(s.mech,Math.min(u.tier,3),u.awk||0)}</b><span>효과</span></div><div class="stat"><b>${board.filter((v,j)=>v&&j!==i&&inAura(i,j)).length}</b><span>받는 아군</span></div><div class="stat"><b>×${(1+mods.supp).toFixed(1)}</b><span>응원단</span></div></div>`:
    `<div class="stats"><div class="stat"><b>${fmt(s.dmg)}</b><span>공격</span></div><div class="stat"><b>${s.rate.toFixed(2)}</b><span>초당 공격</span></div>
    <div class="stat"><b>${s.range.toFixed(1)}</b><span>사거리(칸)</span></div><div class="stat"><b>${Math.round(s.crit*100)}%</b><span>치명타</span></div></div>`}
    ${match}
@@ -370,10 +395,11 @@ function renderPanel(){
    ${(()=>{const h=comboHint(u);if(!h)return '';const r=comboFor(i),L=LEGENDS[h.to],ok=PROG.dex.o[L.id];return `<p class="nat">특수 조합 ${h.hint}${r?': 지금 할 수 있어요':': '+(h.need[0]==='eevee3'?'서로 다른 이브이 진화형 셋':h.need.join(' + '))}${ok?' → '+L.n:''}</p>`;})()}
    ${u.dealt?`<p class="nat">이번 판에 준 피해 ${fmt(u.dealt)}</p>`:''}
    <div class="actions">${u.partner?'':`<button class="dbtn" data-a="sell">팔기 +${REFUND[u.tier]*(u.mega?2:1)}</button>`}
+   ${canAwk(u)?`<button class="dbtn gold" data-a="awk" ${state.coins<awkCost(u)?'disabled':''}>각성 ${(u.awk||0)+1}단계 · ${awkCost(u)}</button>`:''}
    ${u.tier===3&&!u.partner&&!u.mega?`<button class="dbtn gold" data-a="fuse" ${lp?'':'disabled'}>${lp?`전설 합체 → ${LEGENDS[legendFor(u)].n}`:`전설 합체 → ${LEGENDS[legendFor(u)].n}: 3단계 2마리 더 필요`}</button>`:''}</div>`;
 }
 $('panel').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,i=state.sel;
-  if(a==='sell')sell(i);else if(a==='fuse')fuse(i);else{state.detail=false;state.sel=-1;renderPanel();}});
+  if(a==='sell')sell(i);else if(a==='fuse')fuse(i);else if(a==='awk')awaken(i);else{state.detail=false;state.sel=-1;renderPanel();}});
 function renderUps(){
   if(!state.deck||!state.deck.length){$('ups').innerHTML='';return;}
   $('ups').innerHTML=state.deck.map((li,k)=>{const L=LINES[li],lv=state.up[k],c=upCost(k),max=lv>=MAXLV;
@@ -388,13 +414,15 @@ $('ups').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b
 function showUpTip(k){
   const li=state.deck[k],L=LINES[li],lv=state.up[k],max=lv>=MAXLV,c=upCost(k);
   const mine=board.filter(u=>u&&u.line===li),leg=mine.filter(u=>u.tier===4).length;
+  // 다음 소환비는 남기고, 그 안에서 연달아 올릴 수 있는 만큼
+  const bulk={n:0,c:0};{const keep=board.some((v,j)=>!v&&OPEN[j])?cost():0;let l=lv;while(l<MAXLV){const cc=Math.round((15+10*l)*mods.upCost);if(bulk.c+cc>state.coins-keep)break;bulk.c+=cc;bulk.n++;l++;}}
   const t=$('tip');t.hidden=false;
   t.innerHTML=`<h4><span class="face">${sprTag(L.id[0])}</span>${L.n[0]} 계열 강화 <span class="tier">Lv${lv}${max?'':' → '+(lv+1)}</span></h4>
    <div class="rows"><span>공격</span><b>+${30*lv}%</b><b class="up2">${max?'':'→ +'+30*(lv+1)+'%'}</b>
    <span>공격 속도</span><b>+${6*lv}%</b><b class="up2">${max?'':'→ +'+6*(lv+1)+'%'}</b></div>
    <p>필드의 ${L.n[0]} 계열 ${mine.length}마리${leg?`(전설 ${leg}마리 포함)`:''}에 바로 적용돼요. 앞으로 소환하거나 진화하는 같은 계열도 똑같이 받아요.</p>
-   <div class="actions"><button class="dbtn blue" data-t="go" ${max?'disabled':''}>${max?'최대 레벨':`강화 · ${c}`}</button><button class="dbtn x" data-t="x">닫기</button></div>`;
-  t.onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;if(b.dataset.t==='go'){upgrade(k);showUpTip(k);}else hideTip();};
+   <div class="actions"><button class="dbtn blue" data-t="go" ${max||state.coins<c?'disabled':''}>${max?'최대 레벨':`강화 · ${c}`}</button>${bulk.n>1?`<button class="dbtn gold" data-t="all">${bulk.n}번 강화 · ${bulk.c}</button>`:''}<button class="dbtn x" data-t="x">닫기</button></div>`;
+  t.onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;const g=b.dataset.t;if(g==='go'){upgrade(k);showUpTip(k);}else if(g==='all'){for(let q=0;q<bulk.n;q++)upgrade(k);showUpTip(k);}else hideTip();};
 }
 function hideTip(){$('tip').hidden=true;}
 // 시너지 줄: 켜진 시너지와 한 마리만 더 있으면 켜지는 것만 보여 주고, 없으면 줄을 접는다
@@ -438,7 +466,8 @@ function hud(){
   $('hud').classList.toggle('bossing',!!(bo&&!bo.dead&&state.phase==='play'&&!state.cut));
   if(bo&&!bo.dead&&state.phase==='play'&&!state.cut){const g=gymAt(state.wave);bb.hidden=false;$('bbn').textContent=g.raid?`전설 ${g.n} ${g.raid}단계`:`${g.lead}의 ${g.n}`;$('bbh').style.width=Math.max(0,bo.hp/bo.max)*100+'%';$('bbh').style.background=hpCol(bo.hp/bo.max);$('bbt').textContent=(GIM_N[bo.gim]&&bo.gT<3?`${GIM_N[bo.gim]} ${Math.max(0,bo.gT).toFixed(1)} · `:'')+Math.max(0,Math.ceil(state.waveT))+'초';}else bb.hidden=true;
   if(coins!==lastCoins){lastCoins=coins;document.querySelectorAll('#ups [data-u]').forEach(b=>{const k=+b.dataset.u,mx=state.up[k]>=MAXLV,ok=!mx&&state.coins>=upCost(k);b.classList.toggle('poor',!mx&&!ok);b.classList.toggle('ready',ok);});
-    if(state.deck&&state.phase==='play'&&state.wave>=2&&state.deck.some((l,k)=>state.coins>=upCost(k)+cost()))tip('up','아래 강화 칸을 누르면 그 계열 전체가 세져요. 길게 누르면 효과를 미리 볼 수 있어요.',3.6);}
+    if(state.deck&&state.phase==='play'&&state.wave>=2&&state.deck.some((l,k)=>state.coins>=upCost(k)+cost()))tip('up','아래 강화 칸을 누르면 그 계열 전체가 세져요. 길게 누르면 효과를 보고 한꺼번에 올릴 수도 있어요.',3.6);
+    if(state.phase==='play'&&state.wave>=AWK_FROM&&board.some(u=>canAwk(u)&&state.coins>=awkCost(u)))tip('awk','이제 전설 포켓몬을 눌러 코인으로 각성시킬 수 있어요. 3단계까지 올라가요.',3.6);}
   const key=state.wave+'|'+state.badges+'|'+state.phase+'|'+board.map(u=>u?u.line*10+u.tier:'').join(',');
   if(hudKey===key)return;hudKey=key;hudWave=state.wave;
   // 길 입구 깃발: 다음 웨이브
@@ -479,15 +508,16 @@ function renderRadial(){
   else if(canMega(u))items.push(['mega','메가<b>진화</b>']);
   else if(u.mega&&megaFood(i)>=0)items.push(['feed','메가<b>먹이기</b>']);
   else if(u.tier===3&&!u.partner&&!u.mega)items.push(['fuse',`전설<b>${lp?'합체':'2마리 더'}</b>`]);
+  if(canAwk(u)&&items.length<4)items.push(['awk',`각성<b>${awkCost(u)}</b>`]);
   const R=G.cell*1.0,ANG={1:[-90],2:[-145,-35],3:[-165,-90,-15],4:[-180,-120,-60,0]},ang=ANG[items.length];
   // 판 위쪽이면 버튼을 아래로 펼치고, 화면 밖으로 나가지 않게 옆으로 민다
   const cy=toSY(c.y)-G.cell*0.35,hb=$('hud').offsetTop+$('hud').offsetHeight,down=cy-R-30<hb+8,A=ang.map(v=>down?-v:v);
   const xs=A.map(v=>c.x+Math.cos(v*Math.PI/180)*R),dx=Math.max(0,32-Math.min(...xs))-Math.max(0,Math.max(...xs)-(G.W-32));
   r.hidden=false;r.style.left=(c.x+dx)+'px';r.style.top=(down?cy+G.cell*0.5:cy)+'px';
-  r.innerHTML=items.map(([k,h],j)=>{const a=A[j]*Math.PI/180;return `<button data-r="${k}" class="${k==='fuse'?'gold':k==='combo'||k==='mega'||k==='feed'?'pink':''}" ${k==='fuse'&&!lp?'disabled':''} style="left:${Math.cos(a)*R}px;top:${Math.sin(a)*R}px">${h}</button>`;}).join('');
+  r.innerHTML=items.map(([k,h],j)=>{const a=A[j]*Math.PI/180;return `<button data-r="${k}" class="${k==='fuse'||k==='awk'?'gold':k==='combo'||k==='mega'||k==='feed'?'pink':''}" ${k==='fuse'&&!lp?'disabled':''} style="left:${Math.cos(a)*R}px;top:${Math.sin(a)*R}px">${h}</button>`;}).join('');
 }
 $('radial').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(!b)return;const k=b.dataset.r,i=state.sel;
-  if(k==='info'){state.detail=true;renderPanel();renderRadial();}else if(k==='sell')sell(i);else if(k==='fuse')fuse(i);
+  if(k==='info'){state.detail=true;renderPanel();renderRadial();}else if(k==='sell')sell(i);else if(k==='fuse')fuse(i);else if(k==='awk'){awaken(i);renderRadial();}
   else if(k==='combo'){doCombo(i);state.sel=-1;renderPanel();}else if(k==='mega'){megaEvolve(i);renderPanel();}else if(k==='feed'){megaFeed(i);renderPanel();}else if(k==='item')showItems(i);});
 // 물건 쥐여 주기
 function showItems(i){const u=board[i];if(!u)return;const t=$('tip');t.hidden=false;

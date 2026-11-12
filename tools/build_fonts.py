@@ -13,7 +13,7 @@ text|=set('을를이가은는과와으로의도만께에서·…×▲▼←→�
 text={c for c in text if c.isprintable() or c==' '}
 os.makedirs(f'{R}/fonts',exist_ok=True)
 tf=f'{R}/fonts/chars.txt'  # qa.py가 화면 글자와 대조한다
-;open(tf,'w',encoding='utf-8').write(''.join(sorted(text)))
+open(tf,'w',encoding='utf-8').write(''.join(sorted(text)))
 JOBS=[('BlackHanSans-Regular.ttf','bhs-400'),('IBMPlexSansKR-Regular.ttf','plex-400'),('IBMPlexSansKR-Medium.ttf','plex-500'),
       ('IBMPlexSansKR-SemiBold.ttf','plex-600'),('IBMPlexSansKR-Bold.ttf','plex-700')]
 for src,out in JOBS:
