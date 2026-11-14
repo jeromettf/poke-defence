@@ -366,3 +366,42 @@ const DEX_REW=[{at:20,n:'시작 코인 +15',ap:s=>{s.coins+=15;}},{at:45,n:'시�
   {at:70,n:'시작 코인 +20',ap:s=>{s.coins+=20;}},{at:100,n:'시작 몬스터볼 +1',ap:s=>{s.balls=(s.balls||0)+1;}},
   {at:130,n:'시작 코인 +25',ap:s=>{s.coins+=25;}},{at:176,n:'시작 마스터볼 1개',ap:s=>{s.master=(s.master||0)+1;}}];
 function dexStartBonus(){if(['tut','daily'].includes(state.mode))return;const n=dexCount();DEX_REW.forEach(r=>{if(n>=r.at)r.ap(state);});}
+
+// 신오 바위 칸: 처음에 빈 칸 셋이 바위. 콜배지(첫 배지)를 받으면 두 번 눌러 코인으로 깬다.
+// 관장을 이겨 길이 바뀔 때마다 바위 하나가 새로 굴러온다. 바위 속에서 코인이나 몬스터볼이 나오기도 한다
+const ROCK_N=3;
+function applyRocks(add){
+  if(typeof state==='undefined'||!state||!state.rocks||REGION.rule!=='sinnoh')return;
+  const onPath=new Set(REGION.closed||[]);state.rocks=state.rocks.filter(i=>!onPath.has(i)&&!board[i]);
+  if(add&&state.phase==='play'&&state.wave>1){const free=[];for(let i=0;i<N;i++)if(OPEN[i]&&!board[i]&&!state.rocks.includes(i))free.push(i);if(free.length>6)state.rocks.push(pick(free));}
+  state.rocks.forEach(i=>{OPEN[i]=false;});
+}
+function rocksInit(){
+  if(REGION.rule!=='sinnoh'){state.rocks=null;return;}
+  const free=[];for(let i=0;i<N;i++)if(OPEN[i]&&!board[i])free.push(i);
+  state.rocks=shuffle(free).slice(0,ROCK_N);state.smashed=0;applyRocks(false);buildBg();
+  introCard('rocks','바위 칸','신오의 판에는 바위가 있어서 그 칸에는 포켓몬을 둘 수 없어요. 첫 관장 강석을 이기면 바위를 두 번 눌러 코인으로 깰 수 있어요. 바위 속에서 코인이나 몬스터볼이 나오기도 해요.');
+}
+function smashRock(i){
+  if(state.badges<1)return toast('바위깨기는 강석을 이기고 콜배지를 받으면 쓸 수 있어요.',2.2);
+  const cost=30+15*(state.smashed||0);
+  if(state.rockArm!==i){state.rockArm=i;return toast(`바위깨기 ${cost}코인. 한 번 더 누르면 깨요.`,2);}
+  state.rockArm=null;if(state.coins<cost)return toast(`코인이 ${Math.ceil(cost-state.coins)} 모자라요.`,1.4);
+  state.coins-=cost;logSpend('b',cost);state.smashed=(state.smashed||0)+1;state.rocks=state.rocks.filter(x=>x!==i);OPEN[i]=true;buildBg();
+  const c=cellCenter(i);burst(c.x,c.y,'바위',14,1.2);shake=Math.max(shake,3);sfx('buy');
+  const r=Math.random();
+  if(r<0.5){const g=20+Math.floor(Math.random()*21);state.coins+=g;fx.push({k:'txt',x:c.x,y:c.y-G.cell*0.5,s:'+'+g,col:'#ffd84a',big:true,t:.9,T:.9});toast(`바위 속에서 코인 ${g}개를 찾았어요!`,1.8);}
+  else if(r<0.8){state.balls=Math.min(6,(state.balls||0)+1);toast('바위 속에서 몬스터볼을 찾았어요!',1.8);}
+  else toast('바위가 깨졌어요. 이제 이 칸에 포켓몬을 둘 수 있어요.',1.8);
+}
+(function(){
+  const sv=setVariant;setVariant=function(){const r=sv.apply(this,arguments);applyRocks(true);return r;};
+  const ng=newGame;newGame=function(){if(state)state.rocks=null;const r=ng.apply(this,arguments);rocksInit();return r;};
+  // resumeRun은 뒤에 읽는 ui.js에 있어서, 스크립트를 다 읽은 뒤에 감싼다
+  addEventListener('DOMContentLoaded',()=>{const rr=resumeRun;resumeRun=function(s){if(state)state.rocks=null;const r=rr.apply(this,arguments);if(state&&state.rocks){applyRocks(false);buildBg();}return r;};});
+  cv.addEventListener('pointerdown',ev=>{
+    if(!state||!state.rocks||!state.rocks.length||state.phase!=='play'||state.paused)return;
+    const b=cv.getBoundingClientRect(),x=ev.clientX-b.left,y=toWY(ev.clientY-b.top),c=Math.floor((x-G.bx)/G.cell),r=Math.floor((y-G.by)/G.cell);
+    if(c<0||r<0||c>=COLS||r>=ROWS)return;const i=r*COLS+c;if(!state.rocks.includes(i))return;
+    ev.stopImmediatePropagation();smashRock(i);},true);
+})();

@@ -20,6 +20,7 @@ const SONGS={
  kanto:{bpm:120,root:60,minor:false,prog:[0,3,4,0,5,3,1,4],seed:11},
  johto:{bpm:106,root:62,minor:false,prog:[0,5,3,4,0,2,3,4],seed:23},
  hoenn:{bpm:128,root:57,minor:false,prog:[0,4,5,3,0,4,3,4],seed:37},
+ sinnoh:{bpm:116,root:59,minor:false,prog:[0,3,5,4,0,3,1,4],seed:61},
  champ:{bpm:136,root:55,minor:true,prog:[0,5,3,4,0,5,6,4],seed:41},
  night:{bpm:92,root:57,minor:true,prog:[0,5,3,6],seed:53},
  boss:{bpm:152,root:57,minor:true,prog:[0,0,5,6,0,0,3,4],seed:71}};

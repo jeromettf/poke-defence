@@ -121,6 +121,9 @@ const LINES=[
  {n:['나무지기','나무돌이','나무킹'],id:[252,253,254],t:['풀'],role:'D',mech:'crit',dmg:9,rate:1.0,range:2.3,rg:'hoenn'},
  {n:['아차모','영치코','번치코'],id:[255,256,257],t:['불꽃','격투'],role:'D',mech:'speedboost',dmg:9,rate:0.8,range:2.0,rg:'hoenn'},
  {n:['물짱이','늪짱이','대짱이'],id:[258,259,260],t:['물','땅'],role:'A',mech:'quake',dmg:9,rate:0.5,range:2.0,rg:'hoenn'},
+ {n:['모부기','수풀부기','토대부기'],id:[387,388,389],t:['풀','땅'],role:'A',mech:'quake',dmg:10,rate:0.5,range:2.0,rg:'sinnoh'},
+ {n:['불꽃숭이','파이숭이','초염몽'],id:[390,391,392],t:['불꽃','격투'],role:'D',mech:'punch',dmg:7,rate:1.5,range:1.7,rg:'sinnoh'},
+ {n:['팽도리','팽태자','엠페르트'],id:[393,394,395],t:['물','강철'],role:'C',mech:'slow',dmg:8,rate:0.9,range:2.2,rg:'sinnoh'},
 ];
 const LIDX=n=>LINES.findIndex(L=>L.n[0]===n);
 const TRAINERS=[
@@ -137,6 +140,9 @@ const TRAINERS=[
  {n:'유빈',desc:'천리안: 고스트 타입 공격 +30%, 고스트 시너지에 필요한 수 1 감소.',lines:['고오스','부우부','뜨아거','드라꼰','이브이'],ap:m=>{m.typeBonus['고스트']=0.3;m.synRedT['고스트']=1;},need:'johto4'},
  {n:'이향',desc:'용의 굴 수행: 드래곤·물 타입 공격 +20%, 관장 피해 +15%.',lines:['미뇽','잉어킹','리아코','아공이','딥상어동'],ap:m=>{m.typeBonus['드래곤']=0.2;m.typeBonus['물']=0.2;m.bossDmg+=0.15;},need:'johto'},
  // 호연 트레이너
+ // 신오 트레이너: 호연을 정복하면 열린다
+ {n:'빛나',desc:'콘테스트 스타: 지원 포켓몬 효과 +25%, 고유 스킬 확률 +15%.',lines:['팽도리','토게피','피츄','랄토스','이브이'],ap:m=>{m.supp+=0.25;m.skill+=0.15;},need:'hoenn'},
+ {n:'광휘',desc:'도감 조사: 덱 앞 세 계열 공격 +20%, 시작 코인 +30.',lines:['모부기','불꽃숭이','팽도리','리오르','딥상어동'],ap:(m,d,st)=>{d.slice(0,3).forEach(i=>{m.lineBonus[i]=(m.lineBonus[i]||0)+0.2;});st.coins+=30;},need:'hoenn'},
  {n:'휘웅',desc:'아빠의 가르침: 시작할 때 몬스터볼 +2, 포획 성공 확률 +15%.',lines:['나무지기','아차모','물짱이','랄토스','아공이'],ap:(m,d,st)=>{st.balls+=2;m.catchB+=0.15;},need:'johto'},
  {n:'봄이',desc:'콘테스트 스타: 날씨 효과 1.5배, 고유 스킬 확률 +15%.',lines:['아차모','물짱이','나무지기','메탕','빈티나'],ap:m=>{m.weather+=0.5;m.skill+=0.15;},need:'hoenn4'},
 ];

@@ -13,7 +13,7 @@ H=functools.partial(Q,directory=R)
 srv=socketserver.TCPServer(('127.0.0.1',0),H);port=srv.server_address[1]
 threading.Thread(target=srv.serve_forever,daemon=True).start()
 URL=f'http://127.0.0.1:{port}/index.html'
-PROG="{clear:{kanto:true,johto:true,hoenn:true},best:{kanto:40,johto:40,hoenn:40},badges:{kanto:8,johto:8,hoenn:8},tut:1}"
+PROG="{clear:{kanto:true,johto:true,hoenn:true,sinnoh:true},best:{kanto:40,johto:40,hoenn:40},badges:{kanto:8,johto:8,hoenn:8},tut:1}"
 W,HH=390,844
 shots=[];warn=[]
 
@@ -55,7 +55,7 @@ with sync_playwright() as p:
     pg.evaluate("closeLayer();showLog()");pg.wait_for_timeout(200);shot(pg,'09_기록')
     pg.evaluate("closeLayer();state.phase='play';finish(false,'필드의 적이 60마리를 넘었어요.')");pg.wait_for_timeout(300);shot(pg,'10_결과')
     # 스테이지 배치: 지방마다 체육관 구간별 길
-    for rg,nt in [(0,8),(1,8),(2,8),(3,5)]:
+    for rg,nt in [(0,8),(1,8),(2,8),(3,5),(4,8)]:
         for k in range(nt):
             pg.evaluate(f"closeModal();newGame(TRAINERS[0].lines.map(LIDX),TRAINERS[0],REGIONS[{rg}]);board=Array(N).fill(null);state.wave={k*5};startWave();state.banner=null;state.cut=null;enemies=[];state.hold=true;state.boss=null;$('toast').dataset.off='';$('intro').hidden=true;")
             pg.wait_for_timeout(200);shot(pg,f's{rg}_{k}',clip={'x':0,'y':100,'width':W,'height':620})

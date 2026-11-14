@@ -13,7 +13,7 @@ function nextAtlas(){for(const g of aPrio){const k=ATLAS.findIndex((s,i)=>ALOAD[
 function bgLoad(){while(aBusy<3){const k=nextAtlas();if(k<0)return;ALOAD[k]=1;aBusy++;
   loadImg(AIMG[k],ATLAS[k]).then(ok=>{ALOAD[k]=ok?2:-1;aBusy--;if(!ok&&!aFailT){aFailT=true;toast('움직이는 그림 일부를 받지 못해 멈춘 그림으로 보여요. 새로고침하면 다시 받아요.',3);}bgLoad();});}}
 function wantGroup(g){aPrio=[g,...aPrio.filter(x=>x!==g)];bgLoad();}
-const REGION_G={kanto:0,johto:2,hoenn:3,champ:3};
+const REGION_G={kanto:0,johto:2,hoenn:3,champ:3,sinnoh:4};
 document.documentElement.style.setProperty('--thsz',`${THUMBS.cols*100}% ${THUMBS.rows*100}%`);
 document.documentElement.style.setProperty("--thimg",`url("${new URL(THUMBS.src,document.baseURI).href}")`);
 const sprTag=id=>{const k=THUMB_IX[id];if(k==null)return '';const c=k%THUMBS.cols,r=(k/THUMBS.cols)|0;
@@ -388,7 +388,7 @@ function update(dt){
     if(e.yawnT>0){e.yawnT-=dt;if(e.yawnT<=0&&!e.boss){e.stunT=Math.max(e.stunT,e.yawnS||3);e.sleep=true;}}
     if(e.confT>0)e.confT-=dt;if(e.markT>0)e.markT-=dt;if(e.frzT>0)e.frzT-=dt;
     if(e.zapT>0)e.zapT-=dt;
-    const v=e.stunT>0||e.rest?0:e.sp*(1-(e.slowT>0?e.slowV:0))*(e.confT>0?-0.8:1)*(state.windT>0?1.5:1)*(state.pass.lugia?0.88:1)*(weatherAt(w)==='hail'?0.9:1);
+    const v=e.stunT>0||e.rest?0:e.sp*(1-(e.slowT>0?e.slowV:0))*(e.confT>0?-0.8:1)*(state.windT>0?1.5:1)*(state.pass.lugia?0.88:1)*(weatherAt(w)==='hail'?0.9:weatherAt(w)==='snow'?0.85:1);
     e.p=(e.p+v*G.cell/G.per*dt+1)%1;const q=pathPos(e.p);if(q.dx)e.dx=q.dx;e.mdx=q.dx;e.mdy=q.dy;e.x=q.x;e.y=q.y;
     e.slowT-=dt;e.debT-=dt;if(e.hitT>0)e.hitT-=dt;if(e.kb>0)e.kb=Math.max(0,e.kb-dt*G.cell*1.2);if(e.dT>0){e.dT-=dt;if(e.dT<=0)flushPop(e);}if(e.popT>0)e.popT-=dt;if(e.critT>0)e.critT-=dt;if(e.stunT>0){e.stunT-=dt;if(e.stunT<=0)e.sleep=false;}
     if(e.poisT>0){e.poisT-=dt;dmgRaw(e,e.poisD*dt,null);}
@@ -399,6 +399,7 @@ function update(dt){
     for(const e of enemies)if(!e.dead&&Math.hypot(e.x-z.x,e.y-z.y)<=z.r)dmgRaw(e,z.dps*dt*(e.debT>0?1+e.debV:1),z.u);}
   zones=zones.filter(z=>z.t>0);
   updRun(dt);
+  const snowNow=weatherAt(state.wave)==='snow';
   for(let i=0;i<N;i++){
     const u=board[i];if(!u)continue;
     if(u.ball)continue;
@@ -407,7 +408,7 @@ function update(dt){
     if(u.charge){u.charge.t-=dt;if(u.charge.t<=0){const go=u.charge.go;u.charge=null;go();}continue;}
     {const sk0=skillOf(u);if(sk0&&sk0.cd&&u.sk!=null&&u.sk>0)u.sk-=dt;}
     if(u.parT>0){u.parT-=dt;if(u.parT<=0)u.slp=false;continue;}
-    u.cd-=dt*(state.hailT>0&&!u.s.t.includes('얼음')?0.6:1);if(u.cd>0)continue;
+    u.cd-=dt*(state.hailT>0&&!u.s.t.includes('얼음')?0.6:1)*(snowNow&&!u.s.t.includes('얼음')?0.9:1);if(u.cd>0)continue;
     const c=cellCenter(i),R=(u.s.range+(u.bf&&u.bf.range?1:0))*G.cell;
     const inR=enemies.filter(e=>!e.dead&&!e.caught&&Math.hypot(e.x-c.x,e.y-c.y)<=R);
     if(!inR.length){u.cd=0;continue;}

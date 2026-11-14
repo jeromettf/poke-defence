@@ -101,14 +101,14 @@ function loadProg(){let p=null;try{p=JSON.parse(store.get(PROG_KEY)||'null');}ca
 let PROG=loadProg();
 const saveProg=()=>store.set(PROG_KEY,JSON.stringify(PROG));
 function noteBadge(){if(state.mode!=='adv')return;const id=REGION.id;PROG.badges[id]=Math.max(PROG.badges[id]||0,state.badges);saveProg();}
-const trUnlocked=T=>!T.need||(T.need==='kanto'?!!PROG.clear.kanto:T.need==='johto4'?(PROG.badges.johto||0)>=4:T.need==='johto'?!!PROG.clear.johto:T.need==='hoenn4'?(PROG.badges.hoenn||0)>=4:false);
-const lineOpen=L=>!L.rg||(L.rg==='johto'?!!PROG.clear.kanto:!!PROG.clear.johto);
+const trUnlocked=T=>!T.need||(T.need==='kanto'?!!PROG.clear.kanto:T.need==='johto4'?(PROG.badges.johto||0)>=4:T.need==='johto'?!!PROG.clear.johto:T.need==='hoenn4'?(PROG.badges.hoenn||0)>=4:T.need==='hoenn'?!!PROG.clear.hoenn:false);
+const lineOpen=L=>!L.rg||(L.rg==='johto'?!!PROG.clear.kanto:L.rg==='sinnoh'?!!PROG.clear.hoenn:!!PROG.clear.johto);
 function saveRun(extra){if(state.mode==='tut')return;
   if(!state.deck||!state.deck.length||state.phase==='over')return;
   const U=u=>u&&{line:u.line,tier:u.tier,nat:u.nat,form:u.form,grow:u.grow||0,ss:u.ss||0,cnt:u.cnt||0,item:u.item||null,mega:u.mega||0,awk:u.awk||0,partner:u.partner||null,dealt:u.dealt||0};
   const E=e=>({t:e.t,name:e.name,sid:e.sid,hp:e.hp,max:e.max,sp:e.sp,p:e.p,big:e.big,fast:e.fast});
   if(dexDirty){dexDirty=false;saveProg();}
-  store.set(SAVE_KEY,JSON.stringify(Object.assign({v:3,region:state.region,deck:state.deck,up:state.up,coins:state.coins,wave:state.wave,waveTypes:state.waveTypes,wmods:state.wmods,
+  store.set(SAVE_KEY,JSON.stringify(Object.assign({v:3,region:state.region,deck:state.deck,up:state.up,coins:state.coins,wave:state.wave,waveTypes:state.waveTypes,wmods:state.wmods,rocks:state.rocks||null,smashed:state.smashed||0,
     taken:state.taken,takenNames:state.takenNames,badges:state.badges,kills:state.kills,summons:state.summons,trIdx:state.trainer?state.trIdx:-1,speed:state.speed,mods,
     mode:state.mode,rank:state.rank,rules:state.rules,seed:state.seed,raidLeg:state.raidLeg,daily:state.daily,balls:state.balls,master:state.master,bag:state.bag,log:state.log,mst:state.mst,missions:state.missions,mDone:state.mDone,
     wildReady:state.wildReady,rerolls:state.rerolls,eggs:state.eggs,
@@ -120,7 +120,7 @@ function resumeRun(s){wantGroup(1);wantGroup(0);wantGroup(REGION_G[s.region]||0)
   const R=REGIONS.find(r=>r.id===s.region)||REGIONS[0];setRegion(R);
   mods=Object.assign(freshMods(),s.mods);
   state={info:state.info,phase:'play',deck:s.deck,up:s.up,coins:s.coins,wave:s.wave,waveT:0,waveLen:20,spawnLeft:0,spawnT:0,spawnGap:1,summons:s.summons,speed:s.speed||1,paused:false,
-    region:R.id,waveTypes:s.waveTypes,wmods:s.wmods,boss:null,bossDown:false,taken:s.taken,takenNames:s.takenNames,badges:s.badges,kills:s.kills,sel:-1,eid:0,
+    region:R.id,waveTypes:s.waveTypes,wmods:s.wmods,rocks:s.rocks||null,smashed:s.smashed||0,boss:null,bossDown:false,taken:s.taken,takenNames:s.takenNames,badges:s.badges,kills:s.kills,sel:-1,eid:0,
     mode:s.mode||'adv',rank:s.rank||0,rules:s.rules||[],seed:s.seed||0,raidLeg:s.raidLeg,daily:s.daily||null};
   if(state.mode==='endless'||state.mode==='raid')MAXW=999;
   initRun(!s.mst);if(s.mst)Object.assign(state,{balls:s.balls,master:s.master||0,bag:s.bag||[],mst:s.mst,missions:s.missions||[],mDone:s.mDone||0,wildReady:s.wildReady,rerolls:s.rerolls||0,eggs:s.eggs||0,lastThrow:-9,conv:2});

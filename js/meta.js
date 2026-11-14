@@ -24,6 +24,7 @@ const ACH=[
  {id:'kanto',n:'관동 정복',d:'관동 40웨이브 돌파',v:()=>PROG.clear.kanto?1:0,goal:1},
  {id:'johto',n:'성도 정복',d:'성도 40웨이브 돌파',v:()=>PROG.clear.johto?1:0,goal:1},
  {id:'hoenn',n:'호연 정복',d:'호연 40웨이브 돌파',v:()=>PROG.clear.hoenn?1:0,goal:1},
+ {id:'sinnoh',n:'신오 정복',d:'신오 40웨이브 돌파',v:()=>PROG.clear.sinnoh?1:0,goal:1},
  {id:'champ',n:'챔피언',d:'챔피언로드 돌파',v:()=>PROG.clear.champ?1:0,goal:1},
  {id:'stars',n:'별 수집가',d:'관장 별 30개',v:totalStars,goal:30},
  {id:'rank5',n:'랭크 5',d:'아무 지방이나 챔피언 랭크 5로 정복',v:()=>maxOf(PROG.rank),goal:5},
@@ -49,7 +50,7 @@ function showTitle(){
   showModal(`<div class="title-wrap">
     <button class="ibtn mus" id="tMus" aria-label="음악">${MUS.on?'음악 켜짐':'음악 꺼짐'}</button>
     <div class="parade" aria-hidden="true"><i class="ground"></i>${[25,4,7,1,155,158,152,255,258,252,133,147].map((id,k)=>`<span class="walk" style="animation-delay:${-k*1.6}s">${sprTag(id)}</span>`).join('')}</div>
-    <div class="logo">포켓몬<br>랜덤 디펜스<small>관동·성도·호연, 그리고 챔피언로드</small></div>
+    <div class="logo">포켓몬<br>랜덤 디펜스<small>관동·성도·호연·신오, 그리고 챔피언로드</small></div>
     <div class="title-btns">${run?`<button class="gbtn summon" id="tCont">이어하기 <small>${rn.n} ${run.wave+(run.rw!=null?0:1)}웨이브</small></button>`:''}
      <button class="gbtn ${run?'':'summon'}" id="tStart">모험 떠나기</button>
      <button class="gbtn" id="tMode" ${F('modes')?'':'aria-disabled="true" style="opacity:.55"'}>도전 모드${F('modes')?'':' <small>20웨이브에 열려요</small>'}</button>
@@ -66,7 +67,7 @@ function showTitle(){
 // ── 지방 고르기(모험·끝없는·규칙 도전) ──
 let selRank=0;
 const maxRank=R=>PROG.clear[R.id]?Math.min(10,(PROG.rank[R.id]||0)+1):0;
-const regionOpen=R=>R.id==='kanto'||(R.id==='johto'&&!!PROG.clear.kanto)||(R.id==='hoenn'&&!!PROG.clear.johto)||(R.id==='champ'&&!!PROG.clear.kanto);
+const regionOpen=R=>R.id==='kanto'||(R.id==='johto'&&!!PROG.clear.kanto)||(R.id==='hoenn'&&!!PROG.clear.johto)||(R.id==='champ'&&!!PROG.clear.kanto)||(R.id==='sinnoh'&&!!PROG.clear.hoenn);
 function showRegions(opt={mode:'adv'}){
   state.phase='draft';closeLayer();const run=loadRun(),mode=opt.mode;
   const anyRank=REGIONS.some(R=>maxRank(R)>0)&&mode==='adv';
