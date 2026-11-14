@@ -471,3 +471,15 @@ h4{margin:8px 0 0;font-size:12px;color:#b9c6e8;letter-spacing:.04em;font-weight:
 .cgain{position:fixed;pointer-events:none;z-index:40;font-family:var(--f-display);font-size:22px;color:#ffd84a;paint-order:stroke fill;-webkit-text-stroke:4px #0b1226}
 .plate.coin.gain{animation:cgain .35s ease-out}
 @keyframes cgain{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+/* 메뉴: 게임·기록 묶음 */
+.mgrp{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(255,255,255,.05);border-radius:16px;padding:10px}
+.mgrp h3,.mhead{grid-column:1/-1;margin:0 0 2px;font:600 13px var(--f-body,inherit);color:#aab4cf;letter-spacing:.02em}
+.mhead{margin:4px 4px -2px}
+.mgrp .gbtn{padding:12px 14px;justify-content:center}
+.mgrp .mwide{grid-column:1/-1}
+.mgrp .gbtn.danger{background:var(--danger);color:#fff;box-shadow:0 3px 0 #9e2323}
+.mtog{justify-content:space-between!important;gap:8px}
+.mtog i{font-style:normal;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#d9dde8;color:#556}
+.mtog.on i{background:#2fae6a;color:#fff}
+.bossbar .bn{display:inline-flex;align-items:center;gap:3px}.bossbar .bn .ti{width:15px;height:15px;flex:none}

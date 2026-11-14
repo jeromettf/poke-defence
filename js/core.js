@@ -187,6 +187,7 @@ function buildBg(){
     b.beginPath();b.roundRect(x,y,w,h,cell*0.3);b.fillStyle=th.island.ground;b.fill();b.clip();
     b.lineCap='round';for(let i=0;i<w*h/(cell*cell)*2.5;i++){const px=x+rr()*w,py=y+rr()*h,q=cell*0.07;b.strokeStyle=hexA(rr()<.5?th.island.dark:th.island.light,0.55);b.lineWidth=1.4;b.beginPath();b.moveTo(px-q*.6,py);b.quadraticCurveTo(px-q*.5,py-q,px-q*.9,py-q*1.5);b.moveTo(px+q*.4,py);b.quadraticCurveTo(px+q*.4,py-q,px+q*.8,py-q*1.4);b.stroke();}
     b.restore();}
+  gymCrest(b,th);
   // 가장자리: 판 둘레만
   b.save();b.translate(G.ox,G.oy);border(b,th,rr,G.bw,G.bh,cell);b.restore();
   drawProps(b,th,rr);gradeBg(b,th);
@@ -201,6 +202,18 @@ function buildBg(){
   // 빈 발판 자리
   for(let i=0;i<N;i++){if(!OPEN[i])continue;const c=cellCenter(i),cy=c.y+cell*0.18,rx=cell*0.42,ry=rx*0.56;ell(b,c.x,cy,rx,ry);b.fillStyle=hexA(gd,0.16);b.fill();b.lineWidth=1;b.strokeStyle=hexA(gd,0.22);b.stroke();}
   buildPlat(th);
+}
+// 체육관마다 판 가운데에 그 관장 타입의 문장을 옅게 새긴다 (배경과 함께 3/4 시점으로 눌려요)
+const TPATH={};const tPath=t=>TPATH[t]||(TPATH[t]=new Path2D(TYPE_GLYPH[t]||''));
+function gymCrest(b,th){
+  const gm=(typeof GYMS!=='undefined')&&GYMS[bgTheme];if(!gm||!gm.t)return;
+  const cx=G.ox+G.bw/2,cy=G.oy+G.bh/2,r=Math.min(G.bw,G.bh)*0.3,gd=th.g[3],col=gm.col||TYPE_COLOR[gm.t[0]];
+  b.save();
+  b.beginPath();b.arc(cx,cy,r,0,7);b.fillStyle=hexA(col,0.10);b.fill();
+  b.lineWidth=G.cell*0.1;b.strokeStyle=hexA(gd,0.28);b.stroke();
+  b.beginPath();b.arc(cx,cy,r*0.86,0,7);b.lineWidth=G.cell*0.04;b.strokeStyle=hexA(col,0.35);b.stroke();
+  b.translate(cx-r*0.75,cy-r*0.75);b.scale(r*1.5/24,r*1.5/24);b.fillStyle=hexA(gd,0.3);b.fill(tPath(gm.t[0]),'evenodd');
+  b.restore();
 }
 function groundMotif(b,th,rr,W,H,cell){
   const [g0,g1,gl,gd]=th.g,n=Math.round(W*H/(cell*cell)*1.6);

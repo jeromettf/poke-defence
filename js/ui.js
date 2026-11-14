@@ -44,7 +44,7 @@ function act(a,b){
     keep.tier++;if(evee)keep.form=rnd(EEVEE.length);
     if(!isDitto(ua)&&!isDitto(ub))keep.grow=(ua.grow||0)+(ub.grow||0);
     const gone=keep===ua?ub:ua;if(gone.item){if(!keep.item)keep.item=gone.item;else giveItem(gone.item);gone.item=null;}
-    board[a]=null;board[b]=keep;keep.cd=0.2;keep.evo={t:0.8,T:0.8,from:oldId};sfx('evo');bump('evos');
+    board[a]=null;board[b]=keep;keep.cd=0.2;keep.evo={t:evoT(),T:evoT(),from:oldId};sfx('evo');bump('evos');
     const c=cellCenter(b);fx.push({k:'ring',x:c.x,y:c.y,r:G.cell*0.7,col:'#ffffff',t:.4,T:.4});
     setTimeout(()=>{const i2=board.indexOf(keep);if(i2<0)return;const c2=cellCenter(i2);fx.push({k:'txt',x:c2.x,y:c2.y-G.cell*0.8,s:josa(def(keep).n,'으로')+' 진화!',col:'#fff6c8',big:true,t:1.1,T:1.1});},650);
     if(evee)toast(`이브이가 ${josa(EEVEE[keep.form].n,'으로')} 진화`,1.4);
@@ -60,7 +60,7 @@ function legendPartners(i){
 }
 function fuse(i){
   const p=legendPartners(i);if(!p)return;
-  const u=board[i],cc0=cellCenter(i),oldId=def(u).id;for(const j of p){const q=cellCenter(j);fx.push({k:'absorb',x1:q.x,y1:q.y,x2:cc0.x,y2:cc0.y,t:.6,T:.6});dropItem(board[j]);board[j]=null;}bump('legends');u.form=legendFor(u);u.tier=4;u.evo={t:1.1,T:1.1,from:oldId};shake=7;sfx('legend');u.cd=0.3;u.pop=0.35;
+  const u=board[i],cc0=cellCenter(i),oldId=def(u).id;for(const j of p){const q=cellCenter(j);fx.push({k:'absorb',x1:q.x,y1:q.y,x2:cc0.x,y2:cc0.y,t:.6,T:.6});dropItem(board[j]);board[j]=null;}bump('legends');u.form=legendFor(u);u.tier=4;u.evo={t:1.1,T:1.1,from:oldId};markReveal(u);shake=7;sfx('legend');u.cd=0.3;u.pop=0.35;
   const c=cellCenter(i);fx.push({k:'ring',x:c.x,y:c.y,r:G.cell*1.2,col:'#f2c14e',t:.6,T:.6});
   toast(`전설 합체: ${LEGENDS[u.form].n}`,1.8);recalc();camP=camT=0.9;cutCD=0;cutin={id:LEGENDS[u.form].id,n:LEGENDS[u.form].n,sk:'전설 합체',col:'#ffd257',t:1.1,T:1.1,leg:true};cutCD=5;
 }
@@ -327,8 +327,17 @@ function showMenu(){
   if(!state.deck||!state.deck.length||state.phase==='draft')return showGuide();
   const wasPaused=state.paused;state.paused=true;syncPause();
   const names=state.takenNames||[];let quit=false;
-  const draw=()=>{showLayer(`<div class="scr-head"><h2>메뉴</h2></div>
+  const tg=(m,on,n,w)=>`<button class="gbtn mtog ${w?'mwide':''} ${on?'on':''}" data-m="${m}" aria-pressed="${on}"><span>${n}</span><i>${on?'켜짐':'꺼짐'}</i></button>`;
+  const draw=()=>{showLayer(`<div class="scr-head"><h2>메뉴</h2><button class="ibtn" data-m="resume" aria-label="닫고 계속하기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="#eef3f1" stroke-width="3" fill="none" stroke-linecap="round"/></svg></button></div>
    <div class="scr-body">
+    <div class="mgrp"><h3>게임</h3>
+     <button class="gbtn summon mwide" data-m="resume">계속하기</button>
+     ${tg('info',state.info,'사거리·단계 표시',1)}${tg('mus',MUS.on,'음악')}${tg('snd',soundOn,'효과음')}
+     <button class="gbtn mwide ${quit?'danger':''}" data-m="quit">${quit?'한 번 더 누르면 이 판을 끝내요':'이 판 포기하기'}</button></div>
+    <div class="mgrp"><h3>기록</h3>
+     <button class="gbtn" data-m="guide">규칙과 도감</button>
+     <button class="gbtn" data-m="log">내 기록</button></div>
+    <h3 class="mhead">이번 판</h3>
     <div class="box"><div class="badges">${GYMS.map((g,k)=>`<span class="badge ${k<state.badges?'on':''}" style="background:${g.col}" title="${g.badge}: ${g.bd}"></span>`).join('')}<span class="sub">배지 ${state.badges||0}/8</span></div>
     ${GYMS.slice(0,state.badges).map(g=>`<span class="sub">${g.badge} · ${g.bd}</span>`).join('')}</div>
     ${state.trainer?`<div class="box"><b>${state.trainer.n} 덱</b><span class="sub">${state.trainer.desc}</span></div>`:''}
@@ -338,15 +347,7 @@ function showMenu(){
     ${state.rules&&state.rules.length?`<div class="box"><b>붙은 규칙</b>${state.rules.map(r=>`<span class="sub">${RULES[r].n}: ${RULES[r].d}</span>`).join('')}</div>`:''}
     ${state.rank?`<div class="box"><b>챔피언 랭크 ${state.rank}</b><span class="sub">${RANKS.slice(1,state.rank+1).map(r=>r.d).join(' · ')}</span></div>`:''}
     ${names.length?`<div class="box"><b>받은 보상</b><div class="taken">${names.map(n=>`<span>${n}</span>`).join('')}</div></div>`:''}
-    <div class="menu-list">
-     <button class="gbtn summon" data-m="resume">계속하기</button>
-     <button class="gbtn" data-m="info">${state.info?'사거리·단계 표시 끄기':'사거리·단계 표시 켜기'}</button>
-     <button class="gbtn" data-m="mus">${MUS.on?'음악 끄기':'음악 켜기'}</button>
-     <button class="gbtn" data-m="snd">${soundOn?'효과음 끄기':'효과음 켜기'}</button>
-     <button class="gbtn" data-m="guide">규칙과 도감</button>
-     <button class="gbtn" data-m="log">내 기록</button>
-     <button class="gbtn ${quit?'danger':''}" data-m="quit">${quit?'한 번 더 누르면 이 판을 끝내요':'이 판 포기하기'}</button>
-    </div></div>`);
+    </div>`);
    $('lsheet').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const m=b.dataset.m;
      if(m==='resume'){closeLayer();state.paused=wasPaused;syncPause();}
      else if(m==='snd'){soundOn=!soundOn;store.set('pkrtd-snd',soundOn?'1':'0');if(soundOn)sfx('summon');draw();}
@@ -464,7 +465,7 @@ function hud(){
   if(state.conveyor)$('cost').textContent=Math.ceil(Math.max(0,state.conv))+'초';
   const bb=$('bossbar'),bo=state.boss;
   $('hud').classList.toggle('bossing',!!(bo&&!bo.dead&&state.phase==='play'&&!state.cut));
-  if(bo&&!bo.dead&&state.phase==='play'&&!state.cut){const g=gymAt(state.wave);bb.hidden=false;$('bbn').textContent=g.raid?`전설 ${g.n} ${g.raid}단계`:`${g.lead}의 ${g.n}`;$('bbh').style.width=Math.max(0,bo.hp/bo.max)*100+'%';$('bbh').style.background=hpCol(bo.hp/bo.max);$('bbt').textContent=(GIM_N[bo.gim]&&bo.gT<3?`${GIM_N[bo.gim]} ${Math.max(0,bo.gT).toFixed(1)} · `:'')+Math.max(0,Math.ceil(state.waveT))+'초';}else bb.hidden=true;
+  if(bo&&!bo.dead&&state.phase==='play'&&!state.cut){const g=gymAt(state.wave);bb.hidden=false;{const nm=g.raid?`전설 ${g.n} ${g.raid}단계`:`${g.lead}의 ${g.n}`;if(bb.dataset.k!==nm){bb.dataset.k=nm;$('bbn').innerHTML=(g.t||[]).map(ti).join('')+nm;}}$('bbh').style.width=Math.max(0,bo.hp/bo.max)*100+'%';$('bbh').style.background=hpCol(bo.hp/bo.max);$('bbt').textContent=(GIM_N[bo.gim]&&bo.gT<3?`${GIM_N[bo.gim]} ${Math.max(0,bo.gT).toFixed(1)} · `:'')+Math.max(0,Math.ceil(state.waveT))+'초';}else bb.hidden=true;
   if(coins!==lastCoins){lastCoins=coins;document.querySelectorAll('#ups [data-u]').forEach(b=>{const k=+b.dataset.u,mx=state.up[k]>=MAXLV,ok=!mx&&state.coins>=upCost(k);b.classList.toggle('poor',!mx&&!ok);b.classList.toggle('ready',ok);});
     if(state.deck&&state.phase==='play'&&state.wave>=2&&state.deck.some((l,k)=>state.coins>=upCost(k)+cost()))tip('up','아래 강화 칸을 누르면 그 계열 전체가 세져요. 길게 누르면 효과를 보고 한꺼번에 올릴 수도 있어요.',3.6);
     if(state.phase==='play'&&state.wave>=AWK_FROM&&board.some(u=>canAwk(u)&&state.coins>=awkCost(u)))tip('awk','이제 전설 포켓몬을 눌러 코인으로 각성시킬 수 있어요. 3단계까지 올라가요.',3.6);}

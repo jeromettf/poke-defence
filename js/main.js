@@ -82,9 +82,12 @@ document.addEventListener('keydown',ev=>{if(!$('modal').hidden||!$('layer').hidd
 
 // ───────── 루프 ─────────
 let last=0;
+// 연출 중에 판을 누르면 연출만 빨리 끝내요
+addEventListener('pointerdown',e=>{if(state.reveal&&e.target&&e.target.closest&&e.target.closest('#stage')){state.reveal.t=Math.min(state.reveal.t,0.22);e.stopImmediatePropagation();e.preventDefault();}},true);
 function frame(ts){
   const dt=Math.min(0.05,last?(ts-last)/1000:0);last=ts;clock+=dt;
   if(state.cut){state.cut.t-=dt;if(state.cut.t<=0){state.cut=null;toast(state.cutMsg,3.4);}}
+  else if(state.reveal){state.reveal.t-=dt;if(state.reveal.t<=0)state.reveal=null;}
   else if(hitStop>0)hitStop-=dt;
   else if(state.phase==='play'&&!state.paused){const sd=cutin&&cutin.T-cutin.t<0.28?dt*0.3:dt;for(let k=0;k<state.speed;k++){if(state.phase!=='play')break;update(sd);}if(state.phase==='play')logTick(dt);}
   updScene(dt);
@@ -94,7 +97,8 @@ function frame(ts){
   tickIntro(dt);tickTut();tickSpot();
   {const sp=(state.phase==='play'&&!state.paused&&!state.cut)?state.speed:1;updParts(dt*sp);if(callout){callout.t-=dt;if(callout.t<=0)callout=null;}if(bumpT>0)bumpT-=dt;if(state.banner){state.banner.t-=dt;if(state.banner.t<=0)state.banner=null;}}
   for(let bi=0;bi<N;bi++){const u=board[bi];if(u&&u.ball){u.ball.t-=dt;if(u.ball.t<=0){u.ball=null;u.born=0.3;const c=cellCenter(bi);fx.push({k:'flash',x:c.x,y:c.y,r:G.cell*0.35,col:'#ffffff',t:.25,T:.25});fx.push({k:'ring',x:c.x,y:c.y+G.cell*0.18,r:G.cell*0.5,col:'#ffffff',t:.35,T:.35});burst(c.x,c.y,'페어리',8,0.9);}}}
-  for(const u of board)if(u){if(u.cast>0)u.cast-=dt;if(u.born>0)u.born-=dt;if(u.pop>0)u.pop-=dt;if(u.lunge>0)u.lunge-=dt*(state.speed||1);if(u.evo){u.evo.t-=dt;if(u.evo.t<=0){u.evo=null;const bi=board.indexOf(u),c=cellCenter(bi);burst(c.x,c.y-G.cell*0.2,'페어리',14,1.3);fx.push({k:'flash',x:c.x,y:c.y-G.cell*0.2,r:G.cell*0.4,col:'#fff6c8',t:.3,T:.3});shake=Math.max(shake,u.tier===4?6:1.5);}}}
+  for(const u of board)if(u){if(u.cast>0)u.cast-=dt;if(u.born>0)u.born-=dt;if(u.pop>0)u.pop-=dt;if(u.lunge>0)u.lunge-=dt*(state.speed||1);if(u.evo){u.evo.t-=dt;if(u.evo.t<=0){u.evo=null;const bi=board.indexOf(u),c=cellCenter(bi);const big=u.tier===4||u.mega;burst(c.x,c.y-G.cell*0.2,'페어리',big?14:6,big?1.3:0.9);fx.push({k:'flash',x:c.x,y:c.y-G.cell*0.2,r:G.cell*(big?0.4:0.3),col:'#fff6c8',t:big?.3:.18,T:big?.3:.18});shake=Math.max(shake,big?6:1);
+      if(u.reveal){u.reveal=0;const dd=def(u);state.reveal={t:2.1,T:2.1,id:dd.id,n:dd.n,mega:!!u.mega};}}}}
   {const nt=state.phase!=='draft'&&isNight(state.wave)?1:0;nightA+=(nt-nightA)*Math.min(1,dt*1.5);}
   if(themeIdx()!==bgTheme)buildBg();
   draw();hud();

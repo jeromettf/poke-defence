@@ -63,7 +63,7 @@ function partnerXp(n,who){const u=who||board.find(v=>v&&v.partner);if(!u||!u.par
   while(P.lv<10&&P.xp>=XPN(P.lv)){P.xp-=XPN(P.lv);P.lv++;partnerUp(u);}}
 function partnerUp(u){const P=u.partner,i=board.indexOf(u);if(i<0)return;const c=cellCenter(i);
   fx.push({k:'txt',x:c.x,y:c.y-G.cell*0.75,s:'Lv'+P.lv,col:'#ff9ec7',big:true,t:1,T:1});fx.push({k:'ring',x:c.x,y:c.y+G.cell*0.18,r:G.cell*0.6,col:'#ff9ec7',t:.5,T:.5});
-  if(P.lv>=5&&u.tier<3){const old=def(u).id;u.tier=3;u.evo={t:0.9,T:0.9,from:old};sfx('evo');toast(`파트너가 ${josa(def(u).n,'으로')} 진화했어요`,2);}
+  if(P.lv>=5&&u.tier<3){const old=def(u).id;u.tier=3;u.evo={t:evoT(),T:evoT(),from:old};sfx('evo');toast(`파트너가 ${josa(def(u).n,'으로')} 진화했어요`,2);}
   else toast(`파트너 Lv${P.lv}${PERK[P.lv]?': '+PERK[P.lv]:': 공격 +12%'}`,1.8);
   if(P.lv>=10)bump('partner10');
   recalcSoon=true;}
@@ -84,7 +84,7 @@ const megaOnBoard=()=>board.some(v=>v&&v.mega);
 const canMega=u=>featOn('mega')&&u&&u.item==='stone'&&!u.mega&&u.tier===3&&MEGA[def(u).n]&&!megaOnBoard();
 function megaFood(i){const u=board[i];if(!u||!u.mega||u.mega>=5)return -1;const k=keyOf(u);
   return board.findIndex((v,j)=>j!==i&&v&&v.tier===3&&!v.partner&&!v.mega&&keyOf(v)===k);}
-function megaEvolve(i){const u=board[i];if(!canMega(u))return;const old=def(u).id;u.mega=1;u.evo={t:1.1,T:1.1,from:old};
+function megaEvolve(i){const u=board[i];if(!canMega(u))return;const old=def(u).id;u.mega=1;u.evo={t:1.1,T:1.1,from:old};markReveal(u);
   shake=6;sfx('legend');camP=camT=0.9;const D=def(u);cutCD=0;cutin={id:D.id,n:D.n,sk:'메가진화',col:'#ff7ad9',t:1.1,T:1.1,leg:true};cutCD=5;
   toast(`${D.n}! 같은 계열 3단계를 먹이면 더 강해져요(최대 5단계).`,2.4);bump('megas');recalc();}
 function megaFeed(i){const j=megaFood(i);if(j<0)return;const u=board[i],v=board[j],a=cellCenter(j),b=cellCenter(i);
@@ -105,7 +105,7 @@ function comboFor(i){const u=board[i];if(!comboOk(u)||!featOn('combo'))return nu
 function comboHint(u){if(!comboOk(u)||!featOn('combo'))return null;const n=def(u).n,isE=LINES[u.line].mech==='eevee';return COMBOS.find(c=>c.need[0]==='eevee3'?isE:c.need.includes(n))||null;}
 function doCombo(i){const r=comboFor(i);if(!r)return;const u=board[i],old=def(u).id,c0=cellCenter(i);
   for(const j of r.cells){const q=cellCenter(j);fx.push({k:'absorb',x1:q.x,y1:q.y,x2:c0.x,y2:c0.y,t:.7,T:.7});dropItem(board[j]);board[j]=null;}
-  u.tier=4;u.form=r.c.to;u.evo={t:1.3,T:1.3,from:old};shake=8;sfx('legend');camP=camT=1.1;
+  u.tier=4;u.form=r.c.to;u.evo={t:1.3,T:1.3,from:old};markReveal(u);shake=8;sfx('legend');camP=camT=1.1;
   const L=LEGENDS[r.c.to];cutCD=0;cutin={id:L.id,n:L.n,sk:'특수 조합',col:'#b98cff',t:1.2,T:1.2,leg:true};cutCD=5;
   toast(`특수 조합: ${L.n}. ${L.pd}`,3);bump('combos');if(typeof dexCombo==='function')dexCombo(r.c.to);recalc();}
 

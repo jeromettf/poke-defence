@@ -67,6 +67,22 @@ function drawLight(){
 }
 function gradeBg(b,th){b.save();b.globalCompositeOperation='soft-light';b.globalAlpha=0.35;b.fillStyle=GRADE[th.ground]||'#ffe8b0';b.fillRect(0,G.wTop,G.W,G.wH);b.restore();}
 // 밤: 포켓몬 둘레만 밝게, 고스트·악은 보랏빛
+// 챔피언로드 사천왕·챔피언전: 둘레를 어둡게 하고 관장에게 위에서 빛줄기
+let arenaA=0;
+function drawArena(){
+  const want=REGION&&REGION.id==='champ'&&state.boss&&!state.boss.dead&&state.phase==='play'?1:0;
+  arenaA+=(want-arenaA)*0.04;if(arenaA<0.02)return;
+  const {W,H,cell}=G,b=state.boss,bx=b?b.x:W/2,by=b?toSY(b.y):H/2;
+  ctx.save();
+  const g=ctx.createRadialGradient(bx,by-cell*0.3,cell*0.7,bx,by,Math.max(W,H)*0.8);
+  g.addColorStop(0,'rgba(4,6,18,0)');g.addColorStop(0.25,`rgba(4,6,18,${0.3*arenaA})`);g.addColorStop(1,`rgba(4,6,18,${0.62*arenaA})`);
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation='lighter';const top=Math.max(0,G.oy*0.3),lg=ctx.createLinearGradient(bx,top,bx,by);
+  lg.addColorStop(0,'rgba(255,240,205,0)');lg.addColorStop(1,`rgba(255,240,205,${0.16*arenaA})`);ctx.fillStyle=lg;
+  ctx.beginPath();ctx.moveTo(bx-cell*0.2,top);ctx.lineTo(bx+cell*0.2,top);ctx.lineTo(bx+cell*0.7,by);ctx.lineTo(bx-cell*0.7,by);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.ellipse(bx,by+cell*0.08,cell*0.7,cell*0.22,0,0,7);ctx.fillStyle=`rgba(255,240,205,${0.2*arenaA})`;ctx.fill();
+  ctx.restore();
+}
 function drawNightLights(){
   if(nightA<0.05)return;const C=sceneCache();
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=nightA*0.6;
