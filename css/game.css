@@ -494,3 +494,9 @@ h4{margin:8px 0 0;font-size:12px;color:#b9c6e8;letter-spacing:.04em;font-weight:
 .sverr{color:#d23c3c!important;font-weight:700}
 .svok{color:#1f8a52!important;font-weight:700}
 .scr-foot .gbtn.danger{background:var(--danger);color:#fff;box-shadow:0 3px 0 #9e2323}
+
+/* 도감 보상 */
+.dexrew .drw{display:flex;flex-wrap:wrap;gap:6px}
+.dexrew .drw span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 9px 4px 4px;border-radius:999px;background:#eef0f5;color:#7a8195}
+.dexrew .drw span i{font-style:normal;font-weight:800;font-size:11px;min-width:26px;text-align:center;padding:2px 5px;border-radius:999px;background:#d5d9e3;color:#555d72}
+.dexrew .drw span.on{background:#fff3cf;color:#6b4d00}.dexrew .drw span.on i{background:#f2c14e;color:#3b2a00}

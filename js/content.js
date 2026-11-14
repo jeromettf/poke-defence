@@ -214,7 +214,7 @@ function switchVariant(k){
   for(let i=0;i<N;i++)if(keep[i]&&!OPEN[i]){moved.push(keep[i]);board[i]=null;}
   for(const u of moved){const e=board.map((v,i)=>v||!OPEN[i]?-1:i).filter(i=>i>=0);if(e.length)board[pick(e)]=u;else{state.coins+=REFUND[u.tier]||0;dropItem(u);}}
   zones=[];state.sel=-1;layout();recalc();
-  setTimeout(()=>toast(`길이 바뀌었어요: ${REGION.variants[VAR].n}${moved.length?`. 길에 걸린 ${moved.length}마리는 빈 칸으로 옮겼어요`:''}`,2.4),900);
+  const vn=(REGION.variants[VAR]||{}).n||'';setTimeout(()=>{if(state.phase==='play')toast(`길이 바뀌었어요: ${vn}${moved.length?`. 길에 걸린 ${moved.length}마리는 빈 칸으로 옮겼어요`:''}`,2.4);},900);
 }
 
 // ── 매 프레임: 포획 진행, 야생 강적 시간, 컨베이어, 미션 ──
@@ -297,3 +297,72 @@ const ITEM_SVG={
 const itemIco=(id,cls='ii')=>`<svg class="${cls}" viewBox="0 0 32 32" aria-hidden="true">${ITEM_SVG[id]||''}</svg>`;
 const ITEM_IMG={};
 for(const k in ITEM_SVG){const im=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="64" height="64">${ITEM_SVG[k]}</svg>`);ITEM_IMG[k]=im;}
+
+// ───────── 6단계 콘텐츠 ─────────
+// 주간 레이드 규칙: 주마다 레이드에 규칙 하나가 붙는다
+const RAID_RULES=['swift','bigboss','glass','rich','nosell','conveyor'];
+const weekRaidRule=()=>{const k=weekKey().split('-');return RAID_RULES[(+k[0]*7+ +k[1]*3)%RAID_RULES.length];};
+
+// 관장 2페이즈: 지방 마지막 관장과 챔피언로드(사천왕·챔피언)는 체력이 절반 아래로 내려가면 진심을 낸다
+// 빨라지고, 기술 간격이 30% 짧아지고, 부하 셋을 부른다
+const ph2Gym=g=>!!g&&!g.raid&&(REGION.id==='champ'||GYMS.indexOf(g)===GYMS.length-1);
+(function(){
+  const sp=spawnEnemy;
+  spawnEnemy=function(isBoss){
+    const w=state.wave;
+    if(!isBoss&&state.wmods&&state.wmods[w]==='rival')return rivalSpawn(w);
+    const r=sp.apply(this,arguments);
+    if(isBoss&&state.boss)state.boss.ph2ok=ph2Gym(gymAt(w));
+    return r;};
+  const bt=bossTick;
+  bossTick=function(e,dt){
+    if(e.ph2ok&&!e.ph2&&e.hp<e.max*0.5){
+      e.ph2=true;e.sp0*=1.2;e.sp=Math.max(e.sp,e.sp0);e.gT=Math.min(e.gT||0,1.2);e.hp=Math.min(e.max*0.5,e.hp+e.max*0.06);
+      const g=gymAt(state.wave);
+      for(let k=0;k<3;k++){const t=e.t||g.t,[name,sid]=pick(ENEMY[t[0]]),hp=hpAt(state.wave)*1.3;mkEnemy({t,name,sid,hp,max:hp,sp:1.2*(state.spMul||1),p:Math.max(0,(e.p||0)-0.015*(k+1))});}
+      fx.push({k:'ring',x:e.x,y:e.y,r:G.cell*1.2,col:'#ff5a4a',t:.7,T:.7});fx.push({k:'txt',x:e.x,y:e.y-G.cell*0.8,s:'2페이즈',col:'#ffb0a8',big:true,t:1.2,T:1.2});
+      state.banner={t:1.5,T:1.5,s:'2페이즈',sub:`${g?josa(g.lead,'이','가'):'관장이'} 진심을 낸다`};shake=Math.max(shake,6);sfx('gym');
+      introCard('ph2','관장 2페이즈','지방 마지막 관장과 챔피언로드의 강자는 체력이 절반 아래로 내려가면 빨라지고, 기술을 더 자주 쓰고, 부하 셋을 불러요. 대장이 남은 시간 안에 쓰러지도록 화력을 아껴 두세요.');}
+    const before=e.gT;const r=bt.apply(this,arguments);
+    if(e.ph2&&e.gT>before)e.gT*=0.7;return r;};
+})();
+
+// 라이벌 웨이브: 12웨이브와 27웨이브(챔피언로드는 22)에 라이벌이 내 덱과 같은 포켓몬을 데리고 나온다
+WMOD.rival={n:'라이벌',hp:1.15,sp:1.1,cnt:1,col:'#ff6f61'};
+WM_DESC.rival='라이벌이 내 덱과 같은 포켓몬을 데리고 나와요. 맨 앞 대장은 체력이 많아요. 이기면 코인과 몬스터볼을 줘요.';
+const RIVAL_N={kanto:'그린',johto:'실버',hoenn:'하리',champ:'그린'};
+const rivalName=()=>RIVAL_N[REGION.id]||'라이벌';
+const rivalWaves=()=>MAXW>=40||MAXW>100?[12,27]:[12,22];
+function rivalSpawn(w){
+  const wm=WMOD.rival,lead=!state.rivalLed,li=pick(state.deck),L=LINES[li],tier=w<15?1:2,sid=L.id[Math.min(tier,L.id.length-1)];
+  state.rivalLed=true;
+  const hp=hpAt(w)*wm.hp*(lead?6:1);
+  mkEnemy({t:L.t,name:lead?`${rivalName()}의 ${L.n[Math.min(tier,L.n.length-1)]}`:L.n[Math.min(tier,L.n.length-1)],sid,hp,max:hp,sp:(lead?0.85:wm.sp)*1.15*(state.spMul||1),big:lead?1.35:1});
+  if(typeof dexSeen==='function')dexSeen(sid);
+}
+(function(){
+  const ng=newGame;
+  newGame=function(deck,tr,R,opt={}){
+    const r=ng.apply(this,arguments);
+    if(['adv','endless','rule'].includes(state.mode)&&state.deck&&state.deck.length){
+      for(const w of rivalWaves()){if(w>MAXW||gymAt(w))continue;state.wmods[w]='rival';
+        const ts=[...new Set(state.deck.map(i=>LINES[i].t[0]))];state.waveTypes[w]=ts.sort(()=>Math.random()-.5).slice(0,2);}}
+    dexStartBonus();return r;};
+  const sw=startWave;
+  startWave=function(){
+    const r=sw.apply(this,arguments),w=state.wave;
+    if(state.wmods&&state.wmods[w]==='rival'){state.rivalLed=false;
+      if(state.banner)state.banner.sub=`라이벌 ${rivalName()} 등장`;}
+    return r;};
+  const ew=endWave;
+  endWave=function(){
+    const w=state.wave,riv=state.wmods&&state.wmods[w]==='rival';
+    if(riv){const c=15+w;state.coins+=c;state.balls=Math.min(6,(state.balls||0)+1);toast(`라이벌 ${rivalName()}을 이겼어요! 코인 +${c}, 몬스터볼 +1`,2.4);}
+    return ew.apply(this,arguments);};
+})();
+
+// 도감 보상: 도감을 채울수록 판을 시작할 때 코인과 볼을 더 받는다 (오늘의 도전과 연습은 빼요)
+const DEX_REW=[{at:20,n:'시작 코인 +15',ap:s=>{s.coins+=15;}},{at:45,n:'시작 몬스터볼 +1',ap:s=>{s.balls=(s.balls||0)+1;}},
+  {at:70,n:'시작 코인 +20',ap:s=>{s.coins+=20;}},{at:100,n:'시작 몬스터볼 +1',ap:s=>{s.balls=(s.balls||0)+1;}},
+  {at:130,n:'시작 코인 +25',ap:s=>{s.coins+=25;}},{at:176,n:'시작 마스터볼 1개',ap:s=>{s.master=(s.master||0)+1;}}];
+function dexStartBonus(){if(['tut','daily'].includes(state.mode))return;const n=dexCount();DEX_REW.forEach(r=>{if(n>=r.at)r.ap(state);});}

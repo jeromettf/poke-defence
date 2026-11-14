@@ -1,7 +1,7 @@
 'use strict';
 // ───────── 판 밖 성장: 도감, 업적, 챔피언 랭크, 별, 모드 ─────────
 let dexDirty=false;
-function dexOwn(id){if(!PROG.dex.o[id]){PROG.dex.o[id]=1;dexDirty=true;}}
+function dexOwn(id){if(!PROG.dex.o[id]){PROG.dex.o[id]=1;dexDirty=true;const n=dexCount(),hit=DEX_REW.find(x=>x.at===n);if(hit)setTimeout(()=>toast(`도감 ${hit.at}종! 다음 판부터 ${hit.n}`,2.8),400);}}
 function dexSeen(id){if(!PROG.dex.s[id]){PROG.dex.s[id]=1;dexDirty=true;}}
 function dexCombo(k){dexOwn(LEGENDS[k].id);}
 function dexAll(){const out=[],seen=new Set(),add=(id,n,g)=>{if(seen.has(id))return;seen.add(id);out.push({id,n,g});};
@@ -102,7 +102,7 @@ function showModes(){
     <button class="card mode" id="mDaily"><span class="t">오늘의 도전</span><span class="thumbs">${sprTag(D.R.face[0])}${D.T.lines.slice(0,3).map(n=>sprTag(LINES[LIDX(n)].id[2])).join('')}</span>
      <span class="d">${D.R.n} · ${D.T.n} 덱 · 규칙 ${RULES[D.rule].n}: ${RULES[D.rule].d}</span><span class="d">날마다 바뀌고, 같은 날은 웨이브 순서가 같아요. ${PROG.daily[dk]?`오늘 최고 ${PROG.daily[dk]}웨이브`:'오늘 첫 도전'}</span></button>
     <button class="card mode" id="mRaid"><span class="t">이번 주 전설 레이드</span><span class="thumbs">${sprTag(L.id)}</span>
-     <span class="d">15웨이브까지 덱을 키운 뒤 ${josa(L.n,'과','와')} 단계별로 싸워요. 단계마다 45초, 체력이 계속 올라가요.</span><span class="d">${PROG.raid[wk]?`이번 주 최고 ${PROG.raid[wk]}단계`:'이번 주 첫 도전'} · 관동 판에서 해요</span></button>
+     <span class="d">15웨이브까지 덱을 키운 뒤 ${josa(L.n,'과','와')} 단계별로 싸워요. 단계마다 45초, 체력이 계속 올라가요.</span><span class="d rule">이번 주 규칙 ${RULES[weekRaidRule()].n}: ${RULES[weekRaidRule()].d}</span><span class="d">${PROG.raid[wk]?`이번 주 최고 ${PROG.raid[wk]}단계`:'이번 주 첫 도전'} · 관동 판에서 해요</span></button>
     <button class="card mode" id="mEnd" ${REGIONS.some(R=>PROG.clear[R.id])?'':'disabled'}><span class="t">끝없는 모드</span><span class="thumbs">${[384,382,383].map(sprTag).join('')}</span>
      <span class="d">${REGIONS.some(R=>PROG.clear[R.id])?'정복한 지방에서 끝까지 버텨요. 40웨이브 뒤에도 관장이 더 강해져 돌아와요.':'지방 하나를 정복하면 열려요.'}</span></button>
     <button class="card mode" id="mRule"><span class="t">규칙 도전</span><span class="thumbs">${[132,129,446].map(sprTag).join('')}</span>
@@ -110,7 +110,7 @@ function showModes(){
    </div>`);
   const sh=$('sheet');sh.querySelector('[data-back]').onclick=showTitle;
   $('mDaily').onclick=()=>{newGame(D.T.lines.map(LIDX),D.T,D.R,{mode:'daily',rules:[D.rule],seed:D.seed,daily:D.seed});};
-  $('mRaid').onclick=()=>showDraft('tr',REGIONS[0],{mode:'raid',raidLeg:weekLegend()});
+  $('mRaid').onclick=()=>showDraft('tr',REGIONS[0],{mode:'raid',raidLeg:weekLegend(),rules:[weekRaidRule()]});
   $('mEnd').onclick=()=>showRegions({mode:'endless'});
   $('mRule').onclick=showRules;
 }
@@ -130,6 +130,7 @@ function showDex(){let tab='계열';
    showLayer(`<div class="scr-head">${backBtn}<h2>도감</h2></div>
    <div class="tabs">${groups.map(g=>`<button class="tab" data-tab="${g}" aria-pressed="${g===tab}">${g}</button>`).join('')}</div>
    <div class="scr-body"><p class="sub">${tab} ${own}/${list.length} · 전체 ${dexCount()}/${all.length} · 만난 야생 포켓몬 ${Object.keys(PROG.dex.s).length}종</p>
+   <div class="box dexrew"><b>도감 보상</b><div class="drw">${DEX_REW.map(r=>`<span class="${dexCount()>=r.at?'on':''}"><i>${r.at}</i>${r.n}</span>`).join('')}</div><span class="sub">채운 만큼 판을 시작할 때 받아요. 오늘의 도전에는 붙지 않아요.</span></div>
    ${tab==='특수'?`<div class="box"><b>특수 조합법</b>${COMBOS.map(c=>{const L=LEGENDS[c.to],ok=PROG.dex.o[L.id];return `<span class="sub">${c.hint}${ok?` → ${L.n}: ${c.need[0]==='eevee3'?'샤미드·쥬피썬더 등 서로 다른 진화형 셋':c.need.join(' + ')}. ${L.pd}`:' → ?'}</span>`;}).join('')}</div>`:''}
    ${tab==='메가'?`<div class="box"><span class="sub">메가스톤을 쥔 3단계 포켓몬이 메가진화해요. 한 번에 한 마리만 할 수 있고, 같은 계열 3단계를 먹이면 5단계까지 강해져요.</span></div>`:''}
    <div class="tiles dex">${list.map(d=>{const ok=PROG.dex.o[d.id];return `<div class="${ok?'':'no'}">${sprTag(d.id)}<b>${ok?d.n:'?'}</b></div>`;}).join('')}</div></div>`);
