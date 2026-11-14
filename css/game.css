@@ -483,3 +483,14 @@ h4{margin:8px 0 0;font-size:12px;color:#b9c6e8;letter-spacing:.04em;font-weight:
 .mtog i{font-style:normal;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#d9dde8;color:#556}
 .mtog.on i{background:#2fae6a;color:#fff}
 .bossbar .bn{display:inline-flex;align-items:center;gap:3px}.bossbar .bn .ti{width:15px;height:15px;flex:none}
+
+/* 제목 화면 작은 글 버튼, 저장 옮기기 */
+.tlinks{display:flex;justify-content:center;gap:14px;flex-wrap:wrap}
+.tlink{background:none;border:0;color:#cfd8f2;font:600 14px var(--f-body,inherit);text-decoration:underline;text-underline-offset:3px;padding:6px 4px;cursor:pointer}
+.seg{display:flex;background:rgba(255,255,255,.08);border-radius:999px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;border-radius:999px;padding:10px;font:700 15px var(--f-body,inherit);background:none;color:#cfd8f2;cursor:pointer}
+.seg button.on{background:#fff;color:#1b2340}
+.svtxt{min-height:120px;font:12px/1.35 ui-monospace,monospace;word-break:break-all}
+.sverr{color:#d23c3c!important;font-weight:700}
+.svok{color:#1f8a52!important;font-weight:700}
+.scr-foot .gbtn.danger{background:var(--danger);color:#fff;box-shadow:0 3px 0 #9e2323}

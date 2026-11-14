@@ -15,5 +15,20 @@ gf=[l for l in head.split('\n') if 'fonts.g' in l]
 pre='\n'.join(f'<link rel="preload" href="fonts/{n}.woff2" as="font" type="font/woff2" crossorigin>' for n in ['plex-400','bhs-400','plex-700'])
 for l in gf:inner=inner.replace(l+'\n','')
 inner=inner.replace('<link rel="stylesheet" href="css/game.css',pre+'\n<link rel="stylesheet" href="css/game.css',1)  # 아티팩트는 주소 뒤 꼬리표 없이
+# 앱으로 설치·오프라인(GitHub 버전만. 아티팩트는 서비스 워커를 못 쓴다)
+pwa='<link rel="manifest" href="manifest.webmanifest">\n<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n'
+inner=inner.replace('<link rel="preload"',pwa+'<link rel="preload"',1)
+inner+="<script>if('serviceWorker' in navigator&&isSecureContext)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>\n"
 open(f'{R}/index.html','w').write('<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'+inner.replace('\n\n<div class="app">','\n</head>\n<body>\n<div class="app">',1)+'</body>\n</html>\n')
-print('ok',len(inner))
+# 서비스 워커: 처음 열 때 게임 파일을 모두 받아 두고, 다음부터는 인터넷이 없어도 열린다
+import glob,json
+pre=['./','index.html','manifest.webmanifest',f'css/game.css?v={v("css/game.css")}']+[f'js/{j}.js?v={v(f"js/{j}.js")}' for j in JS]
+pre+=sorted(os.path.relpath(f,R) for f in glob.glob(f'{R}/fonts/*.woff2')+glob.glob(f'{R}/sprites/*')+glob.glob(f'{R}/icons/*.png'))
+# 미리 받는 파일 내용이 하나라도 바뀌면 버전이 바뀌어 새로 받는다
+hx=hashlib.md5(open(f'{R}/index.html','rb').read())
+for f in pre:
+    q=f.split('?')[0]
+    if q not in ('./','index.html'):hx.update(open(f'{R}/{q}','rb').read())
+ver=hx.hexdigest()[:10]
+open(f'{R}/sw.js','w').write(open(f'{R}/src/sw.tpl.js',encoding='utf-8').read().replace('__V__',ver).replace('__PRE__',json.dumps(pre)))
+print('ok',len(inner),'sw',ver,len(pre))

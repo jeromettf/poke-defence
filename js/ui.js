@@ -323,6 +323,8 @@ function partnerBox(){const u=board.find(v=>v&&v.partner);if(!u)return '';const 
 function showMissions(){if(!state.missions)return;const wasPaused=state.paused;state.paused=true;syncPause();
   showLayer(`<div class="scr-head">${backBtn}<h2>이번 판 미션</h2></div><div class="scr-body">${misBox()}${partnerBox()}</div>`);
   $('lsheet').querySelector('[data-back]').onclick=()=>{closeLayer();state.paused=wasPaused;syncPause();};}
+// 전체 화면: 설치한 앱(이미 전체 화면)이 아니고, 브라우저가 허락할 때만
+const canFS=()=>{try{return !!document.fullscreenEnabled&&!matchMedia('(display-mode: fullscreen)').matches;}catch(e){return false;}};
 function showMenu(){
   if(!state.deck||!state.deck.length||state.phase==='draft')return showGuide();
   const wasPaused=state.paused;state.paused=true;syncPause();
@@ -332,7 +334,7 @@ function showMenu(){
    <div class="scr-body">
     <div class="mgrp"><h3>게임</h3>
      <button class="gbtn summon mwide" data-m="resume">계속하기</button>
-     ${tg('info',state.info,'사거리·단계 표시',1)}${tg('mus',MUS.on,'음악')}${tg('snd',soundOn,'효과음')}
+     ${tg('info',state.info,'사거리·단계 표시',1)}${tg('mus',MUS.on,'음악')}${tg('snd',soundOn,'효과음')}${canFS()?tg('fs',!!document.fullscreenElement,'전체 화면',1):''}
      <button class="gbtn mwide ${quit?'danger':''}" data-m="quit">${quit?'한 번 더 누르면 이 판을 끝내요':'이 판 포기하기'}</button></div>
     <div class="mgrp"><h3>기록</h3>
      <button class="gbtn" data-m="guide">규칙과 도감</button>
@@ -353,6 +355,7 @@ function showMenu(){
      else if(m==='snd'){soundOn=!soundOn;store.set('pkrtd-snd',soundOn?'1':'0');if(soundOn)sfx('summon');draw();}
      else if(m==='mus'){MUS.on=!MUS.on;store.set('pkrtd-bgm',MUS.on?'1':'0');music();draw();}
      else if(m==='info'){state.info=!state.info;draw();}
+     else if(m==='fs'){const p=document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen({navigationUI:'hide'});Promise.resolve(p).then(draw,()=>{toast('이 화면에서는 전체 화면을 쓸 수 없어요.',2);draw();});}
      else if(m==='guide')showGuide();
      else if(m==='log')showLog(draw);
      else if(m==='quit'){if(quit){closeLayer();state.paused=false;syncPause();finish(false,'이 판을 포기했어요.');}else{quit=true;draw();}}});};

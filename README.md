@@ -13,6 +13,10 @@ python3 -m http.server 8000
 # http://localhost:8000/
 ```
 
+## 앱으로 설치, 저장 옮기기
+
+GitHub Pages 버전은 휴대폰 브라우저 메뉴의 '홈 화면에 추가'(안드로이드 크롬은 제목 화면 버튼)로 설치하면 전체 화면으로 열리고, 한 번 연 뒤에는 인터넷 없이도 된다. 저장은 기기·브라우저마다 따로라서, 제목 화면의 '저장 옮기기'에서 글 한 줄로 내보내고 다른 곳(설치한 앱, 아티팩트 버전, 다른 휴대폰)에서 붙여 넣어 옮긴다.
+
 ## 파일 구조
 
 | 경로 | 내용 |
@@ -21,6 +25,8 @@ python3 -m http.server 8000
 | `artifact.html` | claude.ai 아티팩트용 본문(문서 머리 없이). 같은 스크립트를 쓴다 |
 | `src/head.html`, `src/body.html` | 위 두 페이지의 원본 |
 | `css/game.css` | 화면 전체 스타일 |
+| `manifest.webmanifest`, `icons/` | 앱 설치 정보와 아이콘 |
+| `sw.js` | 오프라인용 서비스 워커. `src/sw.tpl.js`로 `tools/build.py`가 만든다 |
 | `js/sprites.js` | 스프라이트 좌표(자동 생성) |
 | `js/data.js` | 타입 상성, 계열(LINES), 특성, 트레이너 덱, 전설, 성격 |
 | `js/regions.js` | 지방 데이터: 체육관, 도시 배경, 적 풀, 관장마다 바뀌는 판 모양, 규칙(성도 낮과 밤, 호연 날씨) |

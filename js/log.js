@@ -82,3 +82,52 @@ function showLog(back){
   };
   draw();
 }
+
+// ── 저장 옮기기: 이 기기의 저장 전체를 글 한 줄로 내보내고, 다른 기기에서 붙여 넣어 되살린다 ──
+// 형식: PKRTD1.<UTF-8 JSON을 base64로>.<검사값>. 검사값이 안 맞으면 글이 잘렸거나 바뀐 것
+const SAVE_PFX='PKRTD1.';
+function saveKeys(){const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('pkrtd-'))o[k]=localStorage.getItem(k);}}catch(e){}return o;}
+const strHash=s=>{let h=5381;for(let i=0;i<s.length;i++)h=(h*33+s.charCodeAt(i))>>>0;return h.toString(36);};
+function b64e(s){const b=new TextEncoder().encode(s);let r='';for(let i=0;i<b.length;i+=0x8000)r+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(r);}
+function b64d(t){const r=atob(t),b=new Uint8Array(r.length);for(let i=0;i<r.length;i++)b[i]=r.charCodeAt(i);return new TextDecoder().decode(b);}
+function exportSave(){const j=JSON.stringify({v:1,t:Date.now(),k:saveKeys()});return SAVE_PFX+b64e(j)+'.'+strHash(j);}
+function parseSave(txt){
+  const s=(txt||'').replace(/\s+/g,'');if(!s)throw '붙여 넣은 글이 없어요.';
+  if(!s.startsWith(SAVE_PFX))throw 'PKRTD1. 로 시작하는 글이 아니에요.';
+  const body=s.slice(SAVE_PFX.length),dot=body.lastIndexOf('.');if(dot<1)throw '글이 중간에 잘린 것 같아요. 처음부터 끝까지 다시 복사해 주세요.';
+  let j;try{j=b64d(body.slice(0,dot));}catch(e){throw '글이 중간에 잘렸거나 바뀌었어요.';}
+  if(strHash(j)!==body.slice(dot+1))throw '글이 중간에 잘렸거나 바뀌었어요. 처음부터 끝까지 다시 복사해 주세요.';
+  const o=JSON.parse(j);if(!o||!o.k||typeof o.k!=='object'||!Object.keys(o.k).length)throw '저장 내용이 비어 있어요.';return o;
+}
+function saveSummary(o){
+  let p={},logs=0;try{p=JSON.parse(o.k['pkrtd-prog']||'{}');}catch(e){}try{logs=JSON.parse(o.k['pkrtd-log']||'[]').length;}catch(e){}
+  const badges=Object.values(p.badges||{}).reduce((a,b)=>a+(b||0),0),dex=Object.keys((p.dex&&p.dex.o)||{}).length,d=new Date(o.t),z=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}에 만든 저장이에요. 배지 ${badges}개, 도감 ${dex}종, 기록 ${logs}판${o.k['pkrtd-run1']?', 이어하기 1판':''}.`;
+}
+function showSaveMove(back){
+  let mode='out',out=exportSave(),msg='',ok=false,pend=null,armed=false,raw='';
+  const esc=t=>t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const draw=()=>{
+    showLayer(`<div class="scr-head">${backBtn}<h2>저장 옮기기</h2></div>
+    <div class="scr-body">
+     <div class="seg"><button class="${mode==='out'?'on':''}" data-s="out">내보내기</button><button class="${mode==='in'?'on':''}" data-s="in">가져오기</button></div>
+     ${mode==='out'?`<div class="box"><b>이 기기의 저장을 글로 옮겨요</b><span class="sub">배지, 도감, 업적, 기록, 이어하기까지 모두 들어 있어요. 복사해서 메모나 메신저에 붙여 두었다가, 다른 기기나 설치한 앱의 '가져오기'에 붙여 넣으세요.</span>
+       <textarea class="lcopy svtxt" id="svOut" readonly>${out}</textarea><span class="sub">${out.length.toLocaleString()}자${msg?' · '+msg:''}</span></div>`
+     :`<div class="box"><b>복사해 둔 글을 붙여 넣어요</b><span class="sub">불러오면 이 기기의 저장은 붙여 넣은 내용으로 바뀌어요. 지금 저장이 아깝다면 먼저 내보내기로 복사해 두세요.</span>
+       <textarea class="lcopy svtxt" id="svIn" placeholder="PKRTD1. 로 시작하는 글">${esc(raw)}</textarea>${msg?`<span class="sub ${pend?'svok':'sverr'}">${msg}</span>`:''}</div>`}
+    </div>
+    <div class="scr-foot">${mode==='out'?`<button class="gbtn summon" id="svCopy">${ok?'복사했어요':'글 복사하기'}</button>`
+      :`<button class="gbtn" id="svCheck">내용 확인</button><button class="gbtn ${armed?'danger':'summon'}" id="svLoad" ${pend?'':'disabled'}>${armed?'한 번 더 누르면 바꿔요':'불러오기'}</button>`}</div>`);
+    const sh=$('lsheet');sh.querySelector('[data-back]').onclick=back||closeLayer;
+    sh.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{mode=b.dataset.s;msg='';ok=false;armed=false;draw();});
+    if(mode==='out'){$('svCopy').onclick=()=>{const t=$('svOut'),fail=()=>{t.focus();t.select();msg='자동 복사가 막혔어요. 글을 길게 눌러 전체 선택한 뒤 복사하세요.';draw();const t2=$('svOut');if(t2){t2.focus();t2.select();}};
+      try{navigator.clipboard.writeText(out).then(()=>{ok=true;msg='';draw();},fail);}catch(e){fail();}};return;}
+    const inp=$('svIn');inp.oninput=()=>{raw=inp.value;if(pend||armed){pend=null;armed=false;msg='';const c=$('svLoad');if(c){c.disabled=true;c.textContent='불러오기';c.className='gbtn summon';}}};
+    $('svCheck').onclick=()=>{raw=inp.value;try{const o=parseSave(raw);pend=o;msg=saveSummary(o);}catch(e){pend=null;msg=typeof e==='string'?e:'글을 읽지 못했어요.';}armed=false;draw();};
+    $('svLoad').onclick=()=>{if(!pend)return;if(!armed){armed=true;draw();return;}
+      try{Object.keys(saveKeys()).forEach(k=>localStorage.removeItem(k));Object.entries(pend.k).forEach(([k,v])=>{if(k.startsWith('pkrtd-'))localStorage.setItem(k,v);});}
+      catch(e){msg='이 기기에 저장하지 못했어요. 저장 공간이 꽉 찼거나 막혀 있어요.';pend=null;armed=false;return draw();}
+      location.reload();};
+  };
+  draw();
+}
